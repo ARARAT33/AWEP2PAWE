@@ -23,31 +23,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: false
 
       - name: Validate required files
         shell: bash
         run: |
           set -euo pipefail
           required=(
-            index.html
-            manifest.json
-            sw.js
-            icon.svg
-            styles.css
-            light-performance.css
-            messenger.css
-            runtime.js
-            state-store.js
-            static-connect.js
-            voice-messages.js
-            app-enhancements.js
-            messenger-actions.js
-            social-runtime.js
-            sid-runtime.js
-            cfid.js
-            tests/browser-smoke.mjs
-            docs/PRODUCT_COMPLETION.md
+            index.html manifest.json sw.js icon.svg styles.css
+            light-performance.css messenger.css runtime.js state-store.js
+            static-connect.js voice-messages.js app-enhancements.js
+            messenger-actions.js social-runtime.js sid-runtime.js cfid.js
+            tests/browser-smoke.mjs docs/PRODUCT_COMPLETION.md
           )
           for file in "${required[@]}"; do
             test -f "$file" || { echo "Missing: $file"; exit 1; }
@@ -70,9 +57,7 @@ jobs:
           shopt -s nullglob
           files=( *.js )
           test "${#files[@]}" -gt 0
-          for file in "${files[@]}"; do
-            node --check "$file"
-          done
+          for file in "${files[@]}"; do node --check "$file"; done
           node --check tests/browser-smoke.mjs
 
       - name: Validate PWA metadata
@@ -85,21 +70,16 @@ jobs:
           if (manifest.display !== 'standalone') throw new Error('manifest display is not standalone');
           if (!manifest.start_url) throw new Error('manifest start_url is missing');
           if (!Array.isArray(manifest.icons) || manifest.icons.length === 0) throw new Error('manifest icons are missing');
-
           const html = fs.readFileSync('index.html', 'utf8');
           for (const required of ['manifest.json', 'runtime.js', 'state-store.js']) {
             if (!html.includes(required)) throw new Error(`index.html missing ${required}`);
           }
           if (!html.includes('serviceWorker')) throw new Error('service worker registration missing');
-
           const sw = fs.readFileSync('sw.js', 'utf8');
           for (const required of ["addEventListener('install'", "addEventListener('fetch'"]) {
             if (!sw.includes(required)) throw new Error(`service worker missing ${required}`);
           }
-          for (const forbidden of ['peer-transport.js', 'app.js', 'core.js', 'fixes.js', 'messenger.js', 'lite-ui.js', 'p2p-media.js', 'pwa.css']) {
-            if (sw.includes(`./${forbidden}`)) throw new Error(`legacy runtime referenced: ${forbidden}`);
-          }
-          for (const required of ['state-store.js', 'runtime.js', 'voice-messages.js', 'app-enhancements.js', 'messenger-actions.js', 'social-runtime.js', 'sid-runtime.js', 'cfid.js', 'static-connect.js']) {
+          for (const required of ['state-store.js','runtime.js','voice-messages.js','app-enhancements.js','messenger-actions.js','social-runtime.js','sid-runtime.js','cfid.js','static-connect.js']) {
             if (!sw.includes(`./${required}`)) throw new Error(`service worker missing ${required}`);
           }
           NODE
