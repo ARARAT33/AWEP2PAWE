@@ -33,6 +33,23 @@ Implemented:
 - resource engine loaded entirely as a static same-origin JavaScript module
 - no Worker, Function, cloud database or cloud file storage added
 
+## Execution 6
+
+Implemented:
+
+- real browser MediaRecorder voice-message capture
+- microphone permission and unsupported-browser handling
+- Opus/WebM or the best supported browser audio MIME type
+- 60-second maximum recording duration
+- random per-message transfer identifiers
+- 28 KiB P2P DataChannel voice chunks
+- DataChannel backpressure handling during voice transfer
+- ordered chunk reconstruction on the receiving peer
+- remote Blob reconstruction and native audio playback
+- sender-side local playback confirmation
+- lightweight mobile composer voice control
+- static same-origin script integration with the existing P2P runtime
+
 ## Acceptance rule
 
 A feature is complete only when the implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
@@ -43,6 +60,6 @@ AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and
 
 ## Status
 
-Execution: 5 / 20
+Execution: 6 / 20
 
 This document must remain conservative and must never be changed to 100% merely because source code exists. The final 100% statement is reserved for a verified final execution.
