@@ -30,6 +30,7 @@
 | Static architecture gate | ✅ | `.github/workflows/quality.yml` |
 | Shareable static signaling link | ✅ | `static-connect.js` — URL-fragment transport only |
 | Complete local-data deletion | ✅ | `state-store.js` deletes local DB and storage |
+| Real browser smoke validation | ✅ | `tests/browser-smoke.mjs` validates UID, PWA, offline shell and WebRTC DataChannel |
 
 ## Execution history
 
@@ -42,6 +43,7 @@ Executions 1–20 implemented the product foundations through identity, authenti
 - Fixed **Clear local data** so it deletes the complete IndexedDB database as well as localStorage, including the durable local identity.
 - Fixed the PWA cache manifest so it no longer references the removed `peer-transport.js` runtime and now caches the active static runtime files.
 - Bumped the service-worker cache to `awep2pawe-v13` to invalidate the previous offline shell safely.
+- Added a real Chromium smoke gate that launches the static site, verifies persistent UID initialization, verifies service-worker availability, exercises an actual browser WebRTC DataChannel loopback, validates static signaling-link creation, and reloads the app while offline.
 
 ## Acceptance status
 
@@ -49,7 +51,7 @@ A feature is counted only when implemented in executable code. UI-only claims ar
 
 ### Remaining unverified cross-device acceptance
 
-The repository has no two-device browser integration harness in this environment. Therefore the following cannot honestly be marked as 100% automatically validated from source alone: arbitrary-Internet UID discovery, real NAT-path interoperability across independent devices, cross-device group/channel synchronization under failure, end-to-end resource request/response across peers, and full call UX across browser/device combinations.
+The repository still cannot honestly claim automatic validation of arbitrary-Internet UID discovery, real NAT-path interoperability across independent devices, cross-device group/channel synchronization under failure, end-to-end resource request/response across independent peers, or complete call UX across all browser/device combinations. The browser smoke test proves the local browser/WebRTC path, but it does not prove independent-network interoperability.
 
 These are **validation limitations**, not a cloud-backend implementation gap. The product remains static and P2P-only.
 
@@ -57,9 +59,9 @@ These are **validation limitations**, not a cloud-backend implementation gap. Th
 
 **Execution: 20 / 20 + post-execution hardening**
 
-**Estimated whole-product implementation coverage: ~96%.**
+**Estimated whole-product implementation coverage: ~97%.**
 
-This percentage is an engineering coverage estimate, not a test-pass percentage. It is intentionally below 100% until the cross-device browser acceptance flows above are actually exercised and observed.
+This percentage is an engineering coverage estimate, not a test-pass percentage. It was raised from ~96% because the repository now has executable Chromium validation for the PWA shell, persistent identity, offline reload path, static signaling-link generation, and a real browser WebRTC DataChannel loopback. It remains below 100% because independent-device/NAT/cross-browser acceptance is not observable from this single CI browser environment.
 
 ## Static action model
 
