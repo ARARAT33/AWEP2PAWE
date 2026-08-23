@@ -44,6 +44,9 @@ Implemented: removed the duplicate extractable ECDH identity from the main runti
 ## Execution 14
 Implemented: consolidated the application onto one authoritative WebRTC runtime. Removed unused legacy `app.js`, `core.js`, `fixes.js` and the competing `peer-transport.js` implementation. Removed the enhancement-layer connection override that created a second P2P stack. Strengthened the GitHub Actions static quality gate to syntax-check active modules, validate the manifest/PWA entrypoint, reject accidental Workers/API/runtime-backend references, run security sanity checks, and verify that legacy duplicate runtimes are absent. Existing local message actions, backup/export, resource engine and the authenticated runtime remain intact.
 
+## Execution 15
+Implemented: replaced the resource engine's whole-file private-resource encryption with bounded 1 MiB chunks. FID/PFID/SID/PSID resources now have versioned IndexedDB metadata plus individually integrity-checked chunks; PFID/PSID chunks use PBKDF2-HMAC-SHA-256-derived AES-256-GCM keys with unique IVs. Reads decrypt and verify every chunk and then verify the complete file SHA-256 before exposing a Blob. Multiple selected files are represented in one manifest, resource deletion removes metadata and its chunks, and resource APIs expose verified local reads rather than plaintext cloud storage.
+
 ## Acceptance rule
 A feature is complete only when the implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
 
@@ -51,10 +54,10 @@ A feature is complete only when the implementation is real and its observable br
 AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and resource metadata are not uploaded to a cloud database. Files are not stored in cloud storage. Direct WebRTC signaling remains explicit because a browser cannot discover an arbitrary Internet peer from a UID alone without a rendezvous path.
 
 ## Current conservative status
-Execution: 14 / 20
+Execution: 15 / 20
 
-Estimated product implementation coverage: **~50%**.
+Estimated product implementation coverage: **~57%**.
 
-This percentage is an engineering acceptance-coverage estimate, not a test pass rate. The repository now has a single authoritative runtime with durable cryptographic identity, authenticated/encrypted P2P sessions, local persistence, direct WebRTC messaging/media, bounded file transfer and integrity verification, resource-ID foundations, voice/video/screen capture, 12-language UI, PWA delivery, local backup/import, and a stricter static/security quality gate. Remaining acceptance work includes full message synchronization/actions and delivery/read semantics, real group/channel protocols, resumable multi-file/folder transfer, PFID/PSID authorization and encryption, CFID resolution, actual browser-compatible SID serving over P2P, richer call signaling and UX, broader rendezvous/discovery compatibility, automated browser/P2P integration validation, and final performance/security validation.
+This percentage is an engineering acceptance-coverage estimate, not a test pass rate. The repository now has a single authoritative runtime with durable cryptographic identity, authenticated/encrypted P2P sessions, local persistence, direct WebRTC messaging/media, bounded resource storage, chunk-level and whole-file integrity verification, password-derived authenticated private-resource encryption, resource-ID foundations, voice/video/screen capture, 12-language UI, PWA delivery, local backup/import, and a stricter static/security quality gate. Remaining acceptance work includes complete message delivery/read synchronization and all requested message actions, real group/channel protocols, direct resumable P2P multi-file/folder serving, CFID resolution, actual browser-compatible SID/PSID serving over the peer channel, richer call signaling and UX, compatible discovery/rendezvous without data storage, automated browser/P2P integration validation, and final performance/security validation.
 
 The final 100% statement is reserved for a verified final execution and must not be inferred from source-code presence alone.
