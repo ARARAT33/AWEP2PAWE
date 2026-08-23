@@ -1,11 +1,10 @@
 /* AWEP2PAWE messenger overrides: light-first, low-cost, responsive. */
 :root{--soft:#eef4fb;--glass:rgba(255,255,255,.90);--hair:#dfe7f0}
 .panel,.settings-panel,.resource-card,.info-card,.empty-card,.resource-line{background:var(--glass)}
-@media(max-width:700px){
- .messenger-shell:has(.conversation-content:not(.hidden)) .chat-list{display:none}
- .messenger-shell:has(.conversation-content:not(.hidden)) .conversation{display:block}
- .messenger-shell:has(.conversation-content:not(.hidden)){height:calc(100vh - 134px)}
- .conversation{position:fixed!important;inset:62px 0 62px!important;z-index:10!important;border-radius:0!important}
- .conversation-content{height:100%}
-}
+.message-action-menu{position:fixed;z-index:1000;min-width:176px;padding:6px;border:1px solid var(--hair);border-radius:14px;background:rgba(255,255,255,.98);box-shadow:0 12px 30px rgba(20,35,55,.16);display:grid;gap:2px}
+.message-action-menu button{appearance:none;border:0;background:transparent;border-radius:9px;padding:9px 11px;text-align:left;font:inherit;cursor:pointer;color:inherit}
+.message-action-menu button:hover,.message-action-menu button:focus-visible{background:var(--soft);outline:none}
+.reply-ref{display:block;margin-bottom:5px;padding:4px 7px;border-left:2px solid #8ca9c7;opacity:.78}
+.bubble time{display:block;font-size:.68rem;opacity:.62;margin-top:5px}
+@media(max-width:700px){.messenger-shell:has(.conversation-content:not(.hidden)) .chat-list{display:none}.messenger-shell:has(.conversation-content:not(.hidden)) .conversation{display:block}.messenger-shell:has(.conversation-content:not(.hidden)){height:calc(100vh - 134px)}.conversation{position:fixed!important;inset:62px 0 62px!important;z-index:10!important;border-radius:0!important}.conversation-content{height:100%}.message-action-menu{min-width:165px}}
 @media(prefers-reduced-transparency:reduce){.panel,.settings-panel,.resource-card,.info-card,.empty-card,.resource-line{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:#fff}}
