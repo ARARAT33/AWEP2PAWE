@@ -46,6 +46,10 @@ Implemented: browser-native cryptographic identity bootstrap. A persistent AWE U
 
 Implemented: authoritative IndexedDB identity lifecycle. Existing non-extractable identity records now remain the source of truth for the permanent AWE UID, so clearing or losing the localStorage mirror no longer rotates identity. Web Crypto is now required for cryptographic identity creation rather than silently falling back to an unprotected identity record, and identity hydration repairs the local UID mirror from the durable record.
 
+## Execution 12
+
+Implemented: persistent identity enforcement and signed identity assertions. Identity initialization now fails closed when Web Crypto or IndexedDB is unavailable instead of silently creating an unprotected identity. Identity reads validate the durable non-extractable private key, and `AWEStateStore.identityAssertion()` / `verifyAssertion()` provide a browser-native signed binding between an AWE UID and its public key for authenticated peer handshakes.
+
 ## Acceptance rule
 
 A feature is complete only when the implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
@@ -56,6 +60,6 @@ AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and
 
 ## Status
 
-Execution: 11 / 20
+Execution: 12 / 20
 
 This document remains conservative and must never be changed to 100% merely because source code exists. The final 100% statement is reserved for a verified final execution.
