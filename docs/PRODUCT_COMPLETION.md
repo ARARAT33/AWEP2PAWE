@@ -42,6 +42,10 @@ Implemented: durable IndexedDB application-state layer with schema versioning an
 
 Implemented: browser-native cryptographic identity bootstrap. A persistent AWE UID is generated with `crypto.randomUUID()`, synchronized into the existing application state before the main runtime starts, and paired with a P-256 ECDSA identity whose private `CryptoKey` is generated non-extractably and persisted directly by IndexedDB. Signing and public-key verification helpers are exposed through `AWEStateStore`; private key bytes are never serialized into localStorage or application backups.
 
+## Execution 11
+
+Implemented: authoritative IndexedDB identity lifecycle. Existing non-extractable identity records now remain the source of truth for the permanent AWE UID, so clearing or losing the localStorage mirror no longer rotates identity. Web Crypto is now required for cryptographic identity creation rather than silently falling back to an unprotected identity record, and identity hydration repairs the local UID mirror from the durable record.
+
 ## Acceptance rule
 
 A feature is complete only when the implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
@@ -52,6 +56,6 @@ AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and
 
 ## Status
 
-Execution: 10 / 20
+Execution: 11 / 20
 
 This document remains conservative and must never be changed to 100% merely because source code exists. The final 100% statement is reserved for a verified final execution.
