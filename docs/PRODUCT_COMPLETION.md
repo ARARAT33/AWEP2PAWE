@@ -25,7 +25,7 @@
 | P2P social control packets | ✅ | authenticated DataChannel control path |
 | 12 UI languages | ✅ | English + Armenian + 10 additional languages |
 | PWA manifest/service worker | ✅ | `manifest.json`, `sw.js` |
-| Offline static shell | ✅ | versioned cache v13 |
+| Offline static shell | ✅ | versioned cache v14 |
 | CSP/XSS-safe text rendering | ✅ | CSP + escaped user content |
 | Static architecture gate | ✅ | `.github/workflows/quality.yml` |
 | Shareable static signaling link | ✅ | `static-connect.js` — URL-fragment transport only |
@@ -41,8 +41,8 @@ Executions 1–20 implemented the product foundations through identity, authenti
 - Added browser-native shareable signaling links using URL fragments. The signaling payload remains in the link; there is no signaling database or application server.
 - Added a static signaling-link helper to the connection dialog without introducing a backend.
 - Fixed **Clear local data** so it deletes the complete IndexedDB database as well as localStorage, including the durable local identity.
-- Fixed the PWA cache manifest so it no longer references the removed `peer-transport.js` runtime and now caches the active static runtime files.
-- Bumped the service-worker cache to `awep2pawe-v13` to invalidate the previous offline shell safely.
+- Fixed the PWA cache manifest so it no longer references removed legacy runtimes and now caches only the active static runtime files.
+- Bumped the service-worker cache from v13 to `awep2pawe-v14` to invalidate the previous offline shell safely.
 - Added a real Chromium smoke gate that launches the static site, verifies persistent UID initialization, verifies service-worker availability, exercises an actual browser WebRTC DataChannel loopback, validates static signaling-link creation, and reloads the app while offline.
 
 ## Acceptance status
