@@ -28,12 +28,14 @@ jobs:
           test -f manifest.json
           test -f sw.js
           test -f icon.svg
+          test -f state-store.js
+          test -f static-connect.js
           grep -q 'runtime.js' index.html
           grep -q 'state-store.js' index.html
           grep -q 'manifest.json' index.html
           grep -q 'serviceWorker' index.html
           ! grep -Eqi 'cloudflare|wrangler|workers?\b|/api/|fetch\([^)]*(database|storage)' -- *.html *.js *.json
-      - name: Validate PWA manifest and service worker
+      - name: Validate PWA manifest, service worker and active runtime cache
         run: |
           node - <<'NODE'
           const fs=require('fs');
@@ -44,6 +46,10 @@ jobs:
           const sw=fs.readFileSync('sw.js','utf8');
           if(!/addEventListener\(['"]install['"]/.test(sw)) throw new Error('service worker install handler missing');
           if(!/addEventListener\(['"]fetch['"]/.test(sw)) throw new Error('service worker fetch handler missing');
+          if(/peer-transport\.js|app\.js|core\.js|fixes\.js/.test(sw)) throw new Error('service worker references removed runtime');
+          for(const file of ['state-store.js','runtime.js','voice-messages.js','app-enhancements.js','messenger-actions.js','social-runtime.js','sid-runtime.js','cfid.js','static-connect.js']){
+            if(!sw.includes(`./${file}`)) throw new Error(`service worker missing ${file}`);
+          }
           NODE
       - name: Security and completeness gates
         run: |
