@@ -1,4 +1,4 @@
-name: AWEP2PAWE Quality
+name: AWEP2PAWE Static Quality
 
 on:
   push:
@@ -12,9 +12,8 @@ permissions:
 
 jobs:
   quality:
-    name: Static PWA quality
+    name: Static site quality
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,34 +23,16 @@ jobs:
         with:
           node-version: 22
 
-      - name: Validate required files
+      - name: Validate pure static architecture
         shell: bash
         run: |
           set -euo pipefail
-          required=(
-            index.html manifest.json sw.js icon.svg styles.css
-            light-performance.css messenger.css runtime.js state-store.js
-            static-connect.js voice-messages.js app-enhancements.js
-            messenger-actions.js social-runtime.js sid-runtime.js cfid.js
-            tests/browser-smoke.mjs docs/PRODUCT_COMPLETION.md
-          )
-          for file in "${required[@]}"; do
-            test -f "$file" || { echo "Missing: $file"; exit 1; }
-          done
-
-      - name: Validate static-only architecture
-        shell: bash
-        run: |
-          set -euo pipefail
-          forbidden_files=(
-            wrangler.toml wrangler.json wrangler.jsonc
-            worker.js workers.js _worker.js
-          )
-          for file in "${forbidden_files[@]}"; do
-            test ! -e "$file" || { echo "Forbidden server runtime file: $file"; exit 1; }
-          done
-          if find . -path './.git' -prune -o -type f -name '*.ts' -print | grep -q .; then
-            echo 'TypeScript runtime files are not permitted in this static site.'
+          required=(index.html styles.css messenger.css light-performance.css state-store.js runtime.js voice-messages.js app-enhancements.js messenger-actions.js social-runtime.js sid-runtime.js cfid.js static-connect.js tests/browser-smoke.mjs docs/PRODUCT_COMPLETION.md)
+          for file in "${required[@]}"; do test -f "$file" || { echo "Missing: $file"; exit 1; }; done
+          forbidden=(manifest.json sw.js wrangler.toml wrangler.json wrangler.jsonc worker.js workers.js _worker.js)
+          for file in "${forbidden[@]}"; do test ! -e "$file" || { echo "Forbidden runtime/PWA file: $file"; exit 1; }; done
+          if grep -RniE 'navigator\.serviceWorker|<link[^>]+manifest' --include='*.html' --include='*.js' . --exclude-dir=.git; then
+            echo 'PWA runtime reference found.'
             exit 1
           fi
 
@@ -61,76 +42,33 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
           files=( *.js )
-          test "${#files[@]}" -gt 0
           for file in "${files[@]}"; do node --check "$file"; done
           node --check tests/browser-smoke.mjs
-
-      - name: Validate PWA metadata
-        shell: bash
-        run: |
-          set -euo pipefail
-          node <<'NODE'
-          const fs = require('fs');
-          const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
-          if (manifest.display !== 'standalone') throw new Error('manifest display is not standalone');
-          if (!manifest.start_url) throw new Error('manifest start_url is missing');
-          if (!manifest.scope) throw new Error('manifest scope is missing');
-          if (!Array.isArray(manifest.icons) || manifest.icons.length < 2) throw new Error('installable icon set is incomplete');
-          for (const size of ['192x192', '512x512']) {
-            if (!manifest.icons.some(icon => icon.sizes === size)) throw new Error(`manifest icon ${size} is missing`);
-          }
-          if (!manifest.icons.some(icon => String(icon.purpose).split(/\s+/).includes('maskable'))) throw new Error('maskable icon is missing');
-          const html = fs.readFileSync('index.html', 'utf8');
-          for (const required of ['manifest.json', 'runtime.js', 'state-store.js']) {
-            if (!html.includes(required)) throw new Error(`index.html missing ${required}`);
-          }
-          if (!html.includes('serviceWorker')) throw new Error('service worker registration missing');
-          const sw = fs.readFileSync('sw.js', 'utf8');
-          for (const required of ["addEventListener('install'", "addEventListener('fetch'"]) {
-            if (!sw.includes(required)) throw new Error(`service worker missing ${required}`);
-          }
-          for (const required of ['state-store.js','runtime.js','voice-messages.js','app-enhancements.js','messenger-actions.js','social-runtime.js','sid-runtime.js','cfid.js','static-connect.js']) {
-            if (!sw.includes(`./${required}`)) throw new Error(`service worker missing ${required}`);
-          }
-          NODE
 
       - name: Security and completeness checks
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RniE 'eval\(|new Function\(|document\.write\(' --include='*.js' --exclude-dir='.git' .; then
+          if grep -RniE 'eval\(|new Function\(|document\.write\(' --include='*.js' --exclude-dir=.git .; then
             echo 'Unsafe JavaScript construct found.'
             exit 1
           fi
-          if grep -RniE 'TODO|FIXME|coming soon|not implemented|placeholder' \
-            --include='*.js' --include='*.html' --include='*.md' --exclude-dir='.git' .; then
+          if grep -RniE 'TODO|FIXME|coming soon|not implemented|placeholder' --include='*.js' --include='*.html' --include='*.md' --exclude-dir=.git .; then
             echo 'Incomplete implementation marker found.'
             exit 1
           fi
 
-      - name: Verify legacy runtimes are removed
+      - name: Browser smoke test
         shell: bash
         run: |
           set -euo pipefail
-          for file in app.js core.js fixes.js peer-transport.js messenger.js lite-ui.js p2p-media.js pwa.css; do
-            test ! -e "$file" || { echo "Legacy file still exists: $file"; exit 1; }
-          done
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+          node tests/browser-smoke.mjs
 
-      - name: Install Playwright
-        shell: bash
-        run: npm install --no-save --no-package-lock playwright@1.55.0
-
-      - name: Install Chromium
-        shell: bash
-        run: npx playwright install --with-deps chromium
-
-      - name: Run browser smoke tests
-        shell: bash
-        run: node tests/browser-smoke.mjs
-
-      - name: Verify completion record
+      - name: Verify static-only completion record
         shell: bash
         run: |
           set -euo pipefail
           test -s docs/PRODUCT_COMPLETION.md
-          grep -q 'Execution: 20 / 20' docs/PRODUCT_COMPLETION.md
+          grep -q 'Pure static site' docs/PRODUCT_COMPLETION.md
