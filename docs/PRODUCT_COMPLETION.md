@@ -8,17 +8,30 @@ Implemented: local identity state, local chat/contact/channel/resource state, SH
 
 ## Execution 2
 
-Implemented and committed:
+Implemented: CSP policy, versioned PWA cache, local chat/message actions, local backup export/import, identity-key exclusion from backup, dynamic chat/message binding and no server persistence.
 
-- browser CSP meta policy for same-origin static application resources
-- versioned PWA cache (`v11`) including the enhancement runtime
-- local chat context actions: copy last message, mute/unmute, export chat
-- local message context actions: copy, edit own message, delete, prepare reply
-- local application backup export/import for chats, contacts, channels, resources, blocks and call history
-- backup deliberately excludes the persistent identity private key
-- active-chat/message binding that follows dynamically rendered chat rows
-- no server-side persistence introduced
-- no Worker/Function/database/storage dependency introduced
+## Execution 3
+
+Implemented: static WebRTC DataChannel transport integration, explicit offer/answer exchange, ICE/STUN configuration, connection-state reporting, reconnect/error handling and P2P message bridge.
+
+## Execution 4
+
+Implemented: real WebRTC microphone/camera/screen media capture, remote media rendering, mute/camera controls, screen-track replacement, media cleanup and call-state handling.
+
+## Execution 5
+
+Implemented:
+
+- real local FID creation from user-selected files
+- SHA-256 content hashing for FID identity and per-file integrity metadata
+- real PFID password-derived AES-256-GCM encryption using PBKDF2 with 310,000 iterations and random salt/IV
+- IndexedDB persistence for resource records
+- real SID/PSID folder selection through the browser directory picker
+- per-file metadata and content hashing for selected folders
+- resource ID generation from deterministic metadata/hash material
+- resource detail/share dialog and ID clipboard copy
+- resource engine loaded entirely as a static same-origin JavaScript module
+- no Worker, Function, cloud database or cloud file storage added
 
 ## Acceptance rule
 
@@ -30,6 +43,6 @@ AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and
 
 ## Status
 
-Execution: 2 / 20
+Execution: 5 / 20
 
 This document must remain conservative and must never be changed to 100% merely because source code exists. The final 100% statement is reserved for a verified final execution.
