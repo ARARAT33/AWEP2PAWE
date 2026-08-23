@@ -1,40 +1,35 @@
 # AWEP2PAWE Product Completion
 
-This file is the living acceptance matrix for the 20 execution runs of the AWEP2PAWE build process.
+Living acceptance matrix for the 20-execution build process.
 
 ## Execution 1
 
-Implemented and verified in source:
+Implemented: local identity state, local chat/contact/channel/resource state, SHA-256 resource identifiers, PBKDF2 + AES-GCM PFID payloads, IndexedDB blobs, WebRTC data-channel flow, explicit offer/answer, peer hello, text delivery, chunked transfer/backpressure, file integrity metadata, file reconstruction, voice/video/screen media setup, call teardown, XSS-safe text rendering, responsive light UI, 12-language strings, PWA registration.
 
-- local persistent AWE identity state
-- local chat/contact/channel/resource state
-- deterministic resource identifiers from SHA-256 content manifests
-- encrypted PFID payload generation using PBKDF2 + AES-GCM
-- IndexedDB file persistence
-- WebRTC data-channel connection with ICE gathering
-- direct offer/answer exchange without an application data server
-- peer hello and peer-bound chat creation
-- message delivery over the data channel
-- chunked file transfer with backpressure
-- file SHA-256 integrity metadata
-- incoming file reconstruction
-- voice/video/screen-share media setup
-- call teardown and media-track cleanup
-- XSS-safe text rendering
-- light-first responsive UI behavior
-- 12-language UI strings
-- PWA service-worker registration
+## Execution 2
+
+Implemented and committed:
+
+- browser CSP meta policy for same-origin static application resources
+- versioned PWA cache (`v11`) including the enhancement runtime
+- local chat context actions: copy last message, mute/unmute, export chat
+- local message context actions: copy, edit own message, delete, prepare reply
+- local application backup export/import for chats, contacts, channels, resources, blocks and call history
+- backup deliberately excludes the persistent identity private key
+- active-chat/message binding that follows dynamically rendered chat rows
+- no server-side persistence introduced
+- no Worker/Function/database/storage dependency introduced
 
 ## Acceptance rule
 
-A feature is marked complete only when its implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
+A feature is complete only when the implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
 
-## Important architecture constraint
+## Static architecture rule
 
-AWEP2PAWE is local-first and does not persist application messages or files in a cloud database/storage service. WebRTC signaling is intentionally explicit in this execution; the application does not pretend that a UID alone can perform Internet peer discovery without a rendezvous/signaling path.
+AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and resource metadata are not uploaded to a cloud database. Files are not stored in cloud storage. Direct WebRTC signaling remains explicit because a browser cannot discover an arbitrary Internet peer from a UID alone without a rendezvous path.
 
 ## Status
 
-Execution: 1 / 20
+Execution: 2 / 20
 
-This matrix is deliberately conservative. It must not be changed to 100% merely because code exists; the final 100% statement is reserved for the final verified execution.
+This document must remain conservative and must never be changed to 100% merely because source code exists. The final 100% statement is reserved for a verified final execution.
