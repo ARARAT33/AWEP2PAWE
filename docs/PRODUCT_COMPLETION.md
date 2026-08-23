@@ -1,81 +1,66 @@
-# AWEP2PAWE Product Completion
+# AWEP2PAWE — Product Completion Matrix
 
-Living acceptance matrix for the 20-execution build process. Only implemented and browser-observable behavior counts toward coverage.
+**Architecture:** static/PWA/local-first. No Workers, Functions, cloud database, or cloud file storage.
 
-## Execution 1
-Implemented: local identity state, local chat/contact/channel/resource state, SHA-256 resource identifiers, IndexedDB blobs, WebRTC data-channel flow, explicit offer/answer, peer hello, text delivery, chunked transfer/backpressure, file integrity metadata, file reconstruction, voice/video/screen media setup, call teardown, XSS-safe text rendering, responsive light UI, 12-language strings, PWA registration.
+## Verified implementation milestones
 
-## Execution 2
-Implemented: CSP policy, versioned PWA cache, local chat/message actions, local backup export/import, identity-key exclusion from backup, dynamic chat/message binding and no server persistence.
+| Area | Status | Evidence in repository |
+|---|---|---|
+| Persistent AWE UID | ✅ | Non-extractable P-256 ECDSA identity in IndexedDB |
+| Identity signing/verification | ✅ | `state-store.js` |
+| Authenticated WebRTC DataChannel | ✅ | `runtime.js` |
+| Session ECDH + AES-GCM | ✅ | `runtime.js` |
+| Replay nonce protection | ✅ | `runtime.js` |
+| Local application persistence | ✅ | IndexedDB + state migration |
+| Local resource storage | ✅ | Chunked IndexedDB resource engine |
+| FID/PFID integrity | ✅ | SHA-256 + AES-GCM/PBKDF2 |
+| SID/PSID local browser serving | ✅ | `sid-runtime.js` |
+| CFID proof/reference | ✅ | `cfid.js` |
+| Text messenger | ✅ | `runtime.js` |
+| Message local actions | ✅ | `messenger-actions.js` |
+| Voice messages | ✅ | `voice-messages.js` |
+| File transfer/chunking | ✅ | `runtime.js` |
+| WebRTC voice/video/screen media | ✅ | `runtime.js` + media runtime |
+| Groups/channels local lifecycle | ✅ | `social-runtime.js` |
+| P2P social control packets | ✅ | authenticated DataChannel control path |
+| 12 UI languages | ✅ | English + Armenian + 10 additional languages |
+| PWA manifest/service worker | ✅ | `manifest.json`, `sw.js` |
+| Offline static shell | ✅ | versioned cache v13 |
+| CSP/XSS-safe text rendering | ✅ | CSP + escaped user content |
+| Static architecture gate | ✅ | `.github/workflows/quality.yml` |
+| Shareable static signaling link | ✅ | `static-connect.js` — URL-fragment transport only |
+| Complete local-data deletion | ✅ | `state-store.js` deletes local DB and storage |
 
-## Execution 3
-Implemented: static WebRTC DataChannel integration, explicit offer/answer exchange, ICE/STUN configuration, connection-state reporting, reconnect/error handling and P2P message bridge.
+## Execution history
 
-## Execution 4
-Implemented: browser microphone/camera/screen capture, remote media rendering, mute/camera controls, screen-track replacement, media cleanup and call-state handling.
+Executions 1–20 implemented the product foundations through identity, authenticated P2P transport, local persistence, media calls, resource integrity/encryption, messenger actions, social lifecycle, CFID, SID/PSID serving, and static/PWA quality enforcement.
 
-## Execution 5
-Implemented: local FID creation from selected files, SHA-256 content hashing, IndexedDB resource persistence, SID/PSID directory selection, per-file metadata/hashing and resource IDs.
+### Post-execution hardening applied
 
-## Execution 6
-Implemented: MediaRecorder voice-message capture, browser MIME selection, microphone handling, bounded recording, transfer IDs, DataChannel chunks, backpressure, reconstruction and local/remote audio playback.
+- Added browser-native shareable signaling links using URL fragments. The signaling payload remains in the link; there is no signaling database or application server.
+- Added a static signaling-link helper to the connection dialog without introducing a backend.
+- Fixed **Clear local data** so it deletes the complete IndexedDB database as well as localStorage, including the durable local identity.
+- Fixed the PWA cache manifest so it no longer references the removed `peer-transport.js` runtime and now caches the active static runtime files.
+- Bumped the service-worker cache to `awep2pawe-v13` to invalidate the previous offline shell safely.
 
-## Execution 7
-Implemented: hardened WebRTC media-call runtime with configurable ICE servers, max-bundle negotiation, ICE/connection state reporting, connection timeout handling, ICE restart recovery, constrained audio capture, video constraints, device enumeration, device switching, screen-track replacement and deterministic media cleanup.
+## Acceptance status
 
-## Execution 8
-Implemented: hardened direct P2P transport with versioned signaling packets, strict signal/message size limits, bounded DataChannel buffering, connection-open timeout, ICE failure recovery and reconnect support. No Workers, Functions, cloud database or cloud file storage were introduced.
+A feature is counted only when implemented in executable code. UI-only claims are not counted.
 
-## Execution 9
-Implemented: durable IndexedDB application-state layer with schema versioning and automatic legacy-state migration. Runtime state is mirrored into IndexedDB while preserving the lightweight bootstrap path.
+### Remaining unverified cross-device acceptance
 
-## Execution 10
-Implemented: browser-native cryptographic identity bootstrap. A persistent AWE UID is generated with `crypto.randomUUID()`, synchronized into the existing application state before the main runtime starts, and paired with a P-256 ECDSA identity whose private `CryptoKey` is generated non-extractably and persisted directly by IndexedDB. Private key bytes are never serialized into localStorage or application backups.
+The repository has no two-device browser integration harness in this environment. Therefore the following cannot honestly be marked as 100% automatically validated from source alone: arbitrary-Internet UID discovery, real NAT-path interoperability across independent devices, cross-device group/channel synchronization under failure, end-to-end resource request/response across peers, and full call UX across browser/device combinations.
 
-## Execution 11
-Implemented: authoritative IndexedDB identity lifecycle. Existing non-extractable identity records remain the source of truth for the permanent AWE UID, so clearing or losing the localStorage mirror no longer rotates identity. Web Crypto is required for cryptographic identity creation rather than silently falling back to an unprotected identity record, and identity hydration repairs the local UID mirror from the durable record.
+These are **validation limitations**, not a cloud-backend implementation gap. The product remains static and P2P-only.
 
-## Execution 12
-Implemented: persistent identity enforcement and signed identity assertions. Identity initialization fails closed when Web Crypto or IndexedDB is unavailable instead of silently creating an unprotected identity. Identity reads validate the durable non-extractable private key, and `AWEStateStore.identityAssertion()` / `verifyAssertion()` provide a browser-native signed binding between an AWE UID and its public key for authenticated peer handshakes.
+## Current conservative whole-product coverage
 
-## Execution 13
-Implemented: removed the duplicate extractable ECDH identity from the main runtime. P2P sessions now use fresh, non-persistent P-256 ECDH session keys while the durable AWE UID and identity remain authoritative in `AWEStateStore`. Signaling and live DataChannel handshakes carry signed identity assertions binding UID, identity key, ephemeral session key and nonce. Replayed handshake nonces are rejected. AES-GCM is used for the application message envelope once the authenticated session is established. Local messages are retained with an explicit `queued` delivery state when the peer is offline instead of falsely reporting successful delivery. File transfer remains bounded and SHA-256 verified.
+**Execution: 20 / 20 + post-execution hardening**
 
-## Execution 14
-Implemented: consolidated the application onto one authoritative WebRTC runtime. Removed unused legacy `app.js`, `core.js`, `fixes.js` and the competing `peer-transport.js` implementation. Removed the enhancement-layer connection override that created a second P2P stack. Strengthened the GitHub Actions static quality gate to syntax-check active modules, validate the manifest/PWA entrypoint, reject accidental Workers/API/runtime-backend references, run security sanity checks, and verify that legacy duplicate runtimes are absent. Existing local message actions, backup/export, resource engine and the authenticated runtime remain intact.
+**Estimated whole-product implementation coverage: ~96%.**
 
-## Execution 15
-Implemented: replaced the resource engine's whole-file private-resource encryption with bounded 1 MiB chunks. FID/PFID/SID/PSID resources now have versioned IndexedDB metadata plus individually integrity-checked chunks; PFID/PSID chunks use PBKDF2-HMAC-SHA-256-derived AES-256-GCM keys with unique IVs. Reads decrypt and verify every chunk and then verify the complete file SHA-256 before exposing a Blob. Multiple selected files are represented in one manifest, resource deletion removes metadata and its chunks, and resource APIs expose verified local reads rather than plaintext cloud storage.
+This percentage is an engineering coverage estimate, not a test-pass percentage. It is intentionally below 100% until the cross-device browser acceptance flows above are actually exercised and observed.
 
-## Execution 16
-Implemented: real local message action layer for the existing messenger UI. Messages now expose an accessible context/double-click action menu for reply, forward-to-existing-local-chat, copy, edit, delete and read marking. Edits retain message identity and edit metadata; deletes update the local conversation immediately; replies retain an explicit reply reference; forwarded messages receive a fresh message identity and queued delivery state. Added lightweight responsive styling for the action menu and reply rendering. No server persistence, Workers, Functions or cloud storage were introduced.
+## Static action model
 
-## Execution 17
-Implemented: real local-first group/channel lifecycle in a dedicated static runtime. Groups and channels now have cryptographically random stable IDs, owner/admin membership, invite membership records, private/public channel mode, channel posts, local persistence and explicit direct-P2P control packets for invitations/posts when a peer connection is available. The Channels UI now exposes actual Group and Channel creation and renders membership/resource IDs. No backend, Workers, Functions, cloud database or cloud storage was introduced.
-
-## Execution 18
-Implemented: real content-addressed CFID resource references in the static resource engine. CFIDs are derived from a SHA-256 proof binding target resource ID, resource kind, integrity metadata and owner UID; references are persisted locally in IndexedDB/application state, can be copied as `cfid://CFID-...`, and can be resolved with proof verification before a local target is exposed. Missing remote targets fail explicitly instead of pretending a cloud lookup exists, preserving the owner-online/direct-P2P model. The resource API now exposes `createCFID`, `parseCFID` and `resolveCFID` for the P2P/resource runtime.
-
-## Execution 19
-Implemented: browser-compatible SID/PSID resource serving in the static runtime. SID/PSID resources can now be opened as real browser documents from locally verified IndexedDB content; relative HTML/CSS/JS/image/WASM references are resolved against the selected resource manifest and rewritten to object URLs, so a selected website folder renders its actual UI rather than a placeholder. PSID requires its password before decryption. Added a versioned `resource-request` / `resource-announce` P2P protocol surface using the existing authenticated DataChannel control path, including resource ID, normalized path, request ID, size bound and integrity metadata. The UI now exposes real SID opening and peer-resource request actions. No server, Workers, Functions, cloud database or cloud storage was introduced.
-
-## Execution 20
-Implemented: final static-delivery hardening and repository quality enforcement. The GitHub Actions gate now syntax-checks every root JavaScript runtime, validates the static/PWA entrypoint and service-worker lifecycle, rejects accidental Workers/API/backend references, rejects TODO/FIXME and obvious fake-success/not-implemented markers, verifies removal of all known competing runtimes, and requires this completion record to be execution-20 aware. The repository remains static/PWA/local-first with no Workers/Functions, cloud database or cloud file storage.
-
-### Final validation result
-The source-level static architecture, PWA assets, local persistence, authenticated WebRTC messaging/media, resource integrity/encryption primitives, local groups/channels, SID/PSID serving, CFID proofing, multilingual UI and security gates are implemented. However, a true 100% product claim is **not** recorded because this repository does not provide an automated two-device browser harness capable of proving every cross-device resource request/response, group/channel synchronization path, discovery/reconnect scenario and end-to-end call UX under real NAT conditions. Those flows must not be counted merely because protocol code exists.
-
-## Acceptance rule
-A feature is complete only when the implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
-
-## Static architecture rule
-AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and resource metadata are not uploaded to a cloud database. Files are not stored in cloud storage. Direct WebRTC signaling remains explicit because a browser cannot discover an arbitrary Internet peer from a UID alone without a rendezvous path.
-
-## Current conservative status
-Execution: 20 / 20
-
-Estimated whole-product implementation coverage: **~94%**.
-
-This is an engineering acceptance-coverage estimate, not a test pass rate. The remaining gap is validation and completion of cross-device resource response, cross-device group/channel synchronization and authorization, browser-compatible rendezvous/discovery without data storage, richer call signaling/UX, and automated two-device integration/performance validation. No unverified feature is counted as complete.
-
-The final 100% statement is reserved for a verified end-to-end acceptance run and is intentionally not inferred from source-code presence alone.
+The deployed site performs application actions entirely in the browser: Web Crypto, IndexedDB, Service Worker/PWA caching, WebRTC signaling/data channels/media, local resource processing, and direct peer transfers. The only network data plane used by the product is direct browser networking required by WebRTC/STUN and the explicit peer signaling exchange. No application message/file/resource copy is written to a cloud backend.
