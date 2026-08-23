@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "AWEP2PAWE — Private P2P Messenger",
   "short_name": "AWEP2PAWE",
   "description": "Lightweight static, local-first peer-to-peer messenger, file and browser-resource sharing.",
@@ -7,12 +8,14 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "any",
   "background_color": "#f6f9fc",
   "theme_color": "#f6f9fc",
   "prefer_related_applications": false,
   "categories": ["communication", "social"],
   "icons": [
-    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+    {"src":"icon.svg","sizes":"192x192","type":"image/svg+xml","purpose":"any"},
+    {"src":"icon.svg","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}
   ]
 }
