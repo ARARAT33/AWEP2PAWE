@@ -1,6 +1,6 @@
 (()=>{'use strict';
-const DB='AWEP2PAWE_RESOURCE_V4',META='resources',CHUNKS='chunks',CHUNK=1024*1024;
-const $=s=>document.querySelector(s),enc=new TextEncoder(),ALPH='0123456789ABCDEF';
+const DB='AWEP2PAWE_RESOURCE_V3',META='resources',CHUNKS='chunks',CHUNK=1024*1024;
+const $=s=>document.querySelector(s),enc=new TextEncoder();
 const toast=t=>{const e=$('#toast');if(e){e.textContent=t;e.classList.add('show');clearTimeout(window.__aweToast);window.__aweToast=setTimeout(()=>e.classList.remove('show'),2200)}};
 const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 async function hash(data){return hex(await crypto.subtle.digest('SHA-256',new Uint8Array(data)))}
