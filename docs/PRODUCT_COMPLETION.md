@@ -47,6 +47,9 @@ Implemented: consolidated the application onto one authoritative WebRTC runtime.
 ## Execution 15
 Implemented: replaced the resource engine's whole-file private-resource encryption with bounded 1 MiB chunks. FID/PFID/SID/PSID resources now have versioned IndexedDB metadata plus individually integrity-checked chunks; PFID/PSID chunks use PBKDF2-HMAC-SHA-256-derived AES-256-GCM keys with unique IVs. Reads decrypt and verify every chunk and then verify the complete file SHA-256 before exposing a Blob. Multiple selected files are represented in one manifest, resource deletion removes metadata and its chunks, and resource APIs expose verified local reads rather than plaintext cloud storage.
 
+## Execution 16
+Implemented: real local message action layer for the existing messenger UI. Messages now expose an accessible context/double-click action menu for reply, forward-to-existing-local-chat, copy, edit, delete and read marking. Edits retain message identity and edit metadata; deletes update the local conversation immediately; replies retain an explicit reply reference; forwarded messages receive a fresh message identity and queued delivery state. Added lightweight responsive styling for the action menu and reply rendering. No server persistence, Workers, Functions or cloud storage were introduced.
+
 ## Acceptance rule
 A feature is complete only when the implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
 
@@ -54,10 +57,10 @@ A feature is complete only when the implementation is real and its observable br
 AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and resource metadata are not uploaded to a cloud database. Files are not stored in cloud storage. Direct WebRTC signaling remains explicit because a browser cannot discover an arbitrary Internet peer from a UID alone without a rendezvous path.
 
 ## Current conservative status
-Execution: 15 / 20
+Execution: 16 / 20
 
-Estimated product implementation coverage: **~57%**.
+Estimated product implementation coverage: **~64%**.
 
-This percentage is an engineering acceptance-coverage estimate, not a test pass rate. The repository now has a single authoritative runtime with durable cryptographic identity, authenticated/encrypted P2P sessions, local persistence, direct WebRTC messaging/media, bounded resource storage, chunk-level and whole-file integrity verification, password-derived authenticated private-resource encryption, resource-ID foundations, voice/video/screen capture, 12-language UI, PWA delivery, local backup/import, and a stricter static/security quality gate. Remaining acceptance work includes complete message delivery/read synchronization and all requested message actions, real group/channel protocols, direct resumable P2P multi-file/folder serving, CFID resolution, actual browser-compatible SID/PSID serving over the peer channel, richer call signaling and UX, compatible discovery/rendezvous without data storage, automated browser/P2P integration validation, and final performance/security validation.
+This is an engineering acceptance-coverage estimate, not a test pass rate. Remaining acceptance work includes complete peer delivery/read synchronization for message actions, real group/channel protocols, direct resumable P2P multi-file/folder serving, CFID resolution, actual browser-compatible SID/PSID serving over the peer channel, discovery/rendezvous without data storage, richer call signaling/UX, automated browser/P2P integration validation, and final performance/security validation.
 
 The final 100% statement is reserved for a verified final execution and must not be inferred from source-code presence alone.
