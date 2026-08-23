@@ -1,53 +1,30 @@
-# AWEP2PAWE — Product Completion Matrix
+# AWEP2PAWE — product state
 
-**Architecture:** pure static/local-first/P2P. No PWA, Service Worker, Workers, Functions, cloud database, or cloud file storage.
+## Architecture
 
-## Verified implementation milestones
+AWEP2PAWE is a temporary QR-first P2P messenger. The browser holds session state only in JavaScript memory. It does not use localStorage, sessionStorage, IndexedDB, cookies, cloud databases, cloud file storage, groups, channels, resource IDs, UID lookup, or presence.
 
-| Area | Status | Evidence in repository |
-|---|---|---|
-| Persistent AWE UID | ✅ | Non-extractable P-256 ECDSA identity in IndexedDB |
-| Identity signing/verification | ✅ | `state-store.js` |
-| Authenticated WebRTC DataChannel | ✅ | `runtime.js` |
-| Session ECDH + AES-GCM | ✅ | `runtime.js` |
-| Replay nonce protection | ✅ | `runtime.js` |
-| Local application persistence | ✅ | IndexedDB + state migration |
-| Local resource storage | ✅ | Chunked IndexedDB resource engine |
-| FID/PFID integrity | ✅ | SHA-256 + AES-GCM/PBKDF2 |
-| SID/PSID local browser serving | ✅ | `sid-runtime.js` |
-| CFID proof/reference | ✅ | `cfid.js` |
-| Text messenger | ✅ | `runtime.js` |
-| Message local actions | ✅ | `messenger-actions.js` |
-| Voice messages | ✅ | `voice-messages.js` |
-| File transfer/chunking | ✅ | `runtime.js` |
-| WebRTC voice/video/screen media | ✅ | `runtime.js` + media runtime |
-| Groups/channels local lifecycle | ✅ | `social-runtime.js` |
-| P2P social control packets | ✅ | authenticated DataChannel control path |
-| 12 UI languages | ✅ | English + Armenian + 10 additional languages |
-| Pure static entrypoint | ✅ | `index.html` has no manifest or service-worker registration |
-| Static browser validation | ✅ | `.github/workflows/quality.yml` |
-| Shareable static signaling link | ✅ | `static-connect.js` — URL-fragment transport only |
-| Complete local-data deletion | ✅ | `state-store.js` deletes local DB and storage |
-| Real browser smoke validation | ✅ | `tests/browser-smoke.mjs` validates UID, static-only runtime, WebRTC DataChannel and signaling |
+### Session flow
+1. Browser creates a fresh random rendezvous capability and ephemeral cryptographic identity.
+2. The capability and bootstrap public key are encoded into a temporary `awe://connect` QR.
+3. A Pages Function holds only the signaling offer/answer/call SDP in isolate memory for a short TTL.
+4. The peers establish WebRTC and exchange chat data directly.
+5. Closing/reloading the page destroys browser session state; the server-side rendezvous entry expires automatically.
 
-## Static architecture
+Messages are never written to the signaling function. Files are not uploaded. The signaling endpoint is only a short-lived bootstrap relay.
 
-The deployed site is intentionally a normal static website. GitHub Pages, Cloudflare Pages static hosting, or any ordinary HTTP server can serve the files without a Worker, Function, database, object store, manifest, or Service Worker. Application state remains in the browser; P2P transport uses WebRTC and explicit peer signaling.
+## Scope
+- Temporary QR connection
+- Direct WebRTC DataChannel text chat
+- Voice call
+- Video call
+- Screen sharing
+- Camera QR scanning with `BarcodeDetector` where supported
+- QR image scanning fallback where supported
+- Lightweight vanilla JavaScript UI
 
-## Acceptance status
+## Explicitly removed
+Persistent UID identity, online/offline presence, contacts, groups, channels, FID/PFID/CFID/SID/PSID resources, local databases, persistent message history, telemetry and cloud content storage.
 
-A feature is counted only when implemented in executable code. UI-only claims are not counted.
-
-Independent-device/NAT traversal, cross-browser interoperability, and all physical-device call combinations cannot be exhaustively proven by a single CI browser. The browser smoke test therefore validates the executable static runtime and local WebRTC path without claiming that a local loopback proves every Internet topology.
-
-## Current whole-product coverage
-
-**Execution: 20 / 20 + static hardening**
-
-**Estimated whole-product implementation coverage: ~97%.**
-
-This is an engineering coverage estimate, not a test-pass percentage. The remaining gap represents independent-device/network interoperability and broader field validation, not a missing cloud backend.
-
-## Privacy model
-
-No application message, file, resource, or private profile is copied to a cloud service by the static application. Local secrets and metadata stay in browser storage. Direct peer communication is performed through browser-native WebRTC APIs and explicit signaling exchange.
+## Cloudflare usage
+Only `/api/signal` is dynamic. Static assets remain normal Pages assets. The function stores only transient signaling state in memory and applies a 60-second TTL. Pages Functions requests count against the Workers request quota; static asset requests do not. This keeps the dynamic surface minimal.
