@@ -53,6 +53,9 @@ Implemented: real local message action layer for the existing messenger UI. Mess
 ## Execution 17
 Implemented: real local-first group/channel lifecycle in a dedicated static runtime. Groups and channels now have cryptographically random stable IDs, owner/admin membership, invite membership records, private/public channel mode, channel posts, local persistence and explicit direct-P2P control packets for invitations/posts when a peer connection is available. The Channels UI now exposes actual Group and Channel creation and renders membership/resource IDs. No backend, Workers, Functions, cloud database or cloud storage was introduced.
 
+## Execution 18
+Implemented: real content-addressed CFID resource references in the static resource engine. CFIDs are derived from a SHA-256 proof binding target resource ID, resource kind, integrity metadata and owner UID; references are persisted locally in IndexedDB/application state, can be copied as `cfid://CFID-...`, and can be resolved with proof verification before a local target is exposed. Missing remote targets fail explicitly instead of pretending a cloud lookup exists, preserving the owner-online/direct-P2P model. The resource API now exposes `createCFID`, `parseCFID` and `resolveCFID` for the P2P/resource runtime.
+
 ## Acceptance rule
 A feature is complete only when the implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
 
@@ -60,10 +63,10 @@ A feature is complete only when the implementation is real and its observable br
 AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and resource metadata are not uploaded to a cloud database. Files are not stored in cloud storage. Direct WebRTC signaling remains explicit because a browser cannot discover an arbitrary Internet peer from a UID alone without a rendezvous path.
 
 ## Current conservative status
-Execution: 17 / 20
+Execution: 18 / 20
 
-Estimated whole-product implementation coverage: **~73%**.
+Estimated whole-product implementation coverage: **~79%**.
 
-This is an engineering acceptance-coverage estimate, not a test pass rate. The repository now includes persistent cryptographic identity, authenticated/encrypted P2P sessions, local persistence, direct WebRTC messaging/media, bounded resource storage and integrity verification, password-derived private-resource encryption, FID/PFID/SID/PSID foundations, voice/video/screen capture, local message actions, real local group/channel lifecycle, 12-language UI, PWA delivery and a static security gate. Remaining acceptance work is concentrated in full cross-device group/channel synchronization and membership authorization, resumable multi-file/folder serving, CFID resolution, browser-compatible SID/PSID serving over a peer resource protocol, rendezvous/discovery without data storage, richer call signaling/UX, automated browser/P2P integration validation, and final performance/security validation.
+This is an engineering acceptance-coverage estimate, not a test pass rate. The repository now includes persistent cryptographic identity, authenticated/encrypted P2P sessions, local persistence, direct WebRTC messaging/media, bounded resource storage and integrity verification, password-derived private-resource encryption, FID/PFID/SID/PSID foundations, content-addressed CFID references, voice/video/screen capture, local message actions, real local group/channel lifecycle, 12-language UI, PWA delivery and a static security gate. Remaining acceptance work is concentrated in cross-device group/channel synchronization and authorization, resumable multi-file/folder serving, browser-compatible SID/PSID serving over a peer resource protocol, actual CFID remote resolution over the existing authenticated DataChannel, rendezvous/discovery without data storage, richer call signaling/UX, automated browser/P2P integration validation, and final performance/security validation.
 
 The final 100% statement is reserved for a verified final execution and must not be inferred from source-code presence alone.
