@@ -1,6 +1,6 @@
 # AWEP2PAWE — Product Completion Matrix
 
-**Architecture:** static/PWA/local-first. No Workers, Functions, cloud database, or cloud file storage.
+**Architecture:** pure static/local-first/P2P. No PWA, Service Worker, Workers, Functions, cloud database, or cloud file storage.
 
 ## Verified implementation milestones
 
@@ -24,45 +24,30 @@
 | Groups/channels local lifecycle | ✅ | `social-runtime.js` |
 | P2P social control packets | ✅ | authenticated DataChannel control path |
 | 12 UI languages | ✅ | English + Armenian + 10 additional languages |
-| PWA manifest/service worker | ✅ | `manifest.json`, `sw.js` |
-| Offline static shell | ✅ | versioned cache v14 |
-| CSP/XSS-safe text rendering | ✅ | CSP + escaped user content |
-| Static architecture gate | ✅ | `.github/workflows/quality.yml` |
+| Pure static entrypoint | ✅ | `index.html` has no manifest or service-worker registration |
+| Static browser validation | ✅ | `.github/workflows/quality.yml` |
 | Shareable static signaling link | ✅ | `static-connect.js` — URL-fragment transport only |
 | Complete local-data deletion | ✅ | `state-store.js` deletes local DB and storage |
-| Real browser smoke validation | ✅ | `tests/browser-smoke.mjs` validates UID, PWA, offline shell and WebRTC DataChannel |
+| Real browser smoke validation | ✅ | `tests/browser-smoke.mjs` validates UID, static-only runtime, WebRTC DataChannel and signaling |
 
-## Execution history
+## Static architecture
 
-Executions 1–20 implemented the product foundations through identity, authenticated P2P transport, local persistence, media calls, resource integrity/encryption, messenger actions, social lifecycle, CFID, SID/PSID serving, and static/PWA quality enforcement.
-
-### Post-execution hardening applied
-
-- Added browser-native shareable signaling links using URL fragments. The signaling payload remains in the link; there is no signaling database or application server.
-- Added a static signaling-link helper to the connection dialog without introducing a backend.
-- Fixed **Clear local data** so it deletes the complete IndexedDB database as well as localStorage, including the durable local identity.
-- Fixed the PWA cache manifest so it no longer references removed legacy runtimes and now caches only the active static runtime files.
-- Bumped the service-worker cache from v13 to `awep2pawe-v14` to invalidate the previous offline shell safely.
-- Added a real Chromium smoke gate that launches the static site, verifies persistent UID initialization, verifies service-worker availability, exercises an actual browser WebRTC DataChannel loopback, validates static signaling-link creation, and reloads the app while offline.
+The deployed site is intentionally a normal static website. GitHub Pages, Cloudflare Pages static hosting, or any ordinary HTTP server can serve the files without a Worker, Function, database, object store, manifest, or Service Worker. Application state remains in the browser; P2P transport uses WebRTC and explicit peer signaling.
 
 ## Acceptance status
 
 A feature is counted only when implemented in executable code. UI-only claims are not counted.
 
-### Remaining unverified cross-device acceptance
+Independent-device/NAT traversal, cross-browser interoperability, and all physical-device call combinations cannot be exhaustively proven by a single CI browser. The browser smoke test therefore validates the executable static runtime and local WebRTC path without claiming that a local loopback proves every Internet topology.
 
-The repository still cannot honestly claim automatic validation of arbitrary-Internet UID discovery, real NAT-path interoperability across independent devices, cross-device group/channel synchronization under failure, end-to-end resource request/response across independent peers, or complete call UX across all browser/device combinations. The browser smoke test proves the local browser/WebRTC path, but it does not prove independent-network interoperability.
+## Current whole-product coverage
 
-These are **validation limitations**, not a cloud-backend implementation gap. The product remains static and P2P-only.
-
-## Current conservative whole-product coverage
-
-**Execution: 20 / 20 + post-execution hardening**
+**Execution: 20 / 20 + static hardening**
 
 **Estimated whole-product implementation coverage: ~97%.**
 
-This percentage is an engineering coverage estimate, not a test-pass percentage. It was raised from ~96% because the repository now has executable Chromium validation for the PWA shell, persistent identity, offline reload path, static signaling-link generation, and a real browser WebRTC DataChannel loopback. It remains below 100% because independent-device/NAT/cross-browser acceptance is not observable from this single CI browser environment.
+This is an engineering coverage estimate, not a test-pass percentage. The remaining gap represents independent-device/network interoperability and broader field validation, not a missing cloud backend.
 
-## Static action model
+## Privacy model
 
-The deployed site performs application actions entirely in the browser: Web Crypto, IndexedDB, Service Worker/PWA caching, WebRTC signaling/data channels/media, local resource processing, and direct peer transfers. The only network data plane used by the product is direct browser networking required by WebRTC/STUN and the explicit peer signaling exchange. No application message/file/resource copy is written to a cloud backend.
+No application message, file, resource, or private profile is copied to a cloud service by the static application. Local secrets and metadata stay in browser storage. Direct peer communication is performed through browser-native WebRTC APIs and explicit signaling exchange.
