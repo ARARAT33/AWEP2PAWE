@@ -15,22 +15,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Syntax check JavaScript
+      - name: Syntax check active JavaScript
         run: |
-          node --check runtime.js
-          node --check app.js
-          node --check messenger.js
-          node --check pwa.js
-          node --check lite-ui.js
-          node --check fixes.js
-      - name: Required PWA assets
+          for f in state-store.js runtime.js voice-messages.js app-enhancements.js p2p-media.js lite-ui.js messenger.js; do
+            if [ -f "$f" ]; then node --check "$f"; fi
+          done
+      - name: Validate static entrypoint
         run: |
           test -f index.html
           test -f manifest.json
           test -f sw.js
           grep -q 'runtime.js' index.html
+          grep -q 'state-store.js' index.html
           grep -q 'manifest.json' index.html
+          ! grep -Eqi 'cloudflare|wrangler|/api/|workers?/' index.html runtime.js state-store.js app-enhancements.js voice-messages.js
+      - name: Validate PWA manifest
+        run: node -e "const m=require('./manifest.json'); if(m.display!=='standalone') process.exit(1); if(!m.start_url) process.exit(1); if(!Array.isArray(m.icons)||m.icons.length<1) process.exit(1)"
       - name: Security sanity checks
         run: |
           ! grep -R "eval(" --include='*.js' .
+          ! grep -R "new Function(" --include='*.js' .
+          ! grep -R "document.write(" --include='*.js' .
           ! grep -R "innerHTML.*message" --include='*.js' .
+      - name: No legacy runtime duplication
+        run: |
+          ! test -e app.js
+          ! test -e core.js
+          ! test -e fixes.js
+      - name: Completion metadata is current
+        run: grep -q 'Execution: 14 / 20' docs/PRODUCT_COMPLETION.md
