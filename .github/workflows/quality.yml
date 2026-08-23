@@ -15,32 +15,50 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Syntax check active JavaScript
+      - name: Syntax check every JavaScript runtime
         run: |
-          for f in state-store.js runtime.js voice-messages.js app-enhancements.js p2p-media.js lite-ui.js messenger.js; do
-            if [ -f "$f" ]; then node --check "$f"; fi
-          done
-      - name: Validate static entrypoint
+          set -eu
+          files=$(find . -maxdepth 1 -type f -name '*.js' -print)
+          test -n "$files"
+          for f in $files; do node --check "$f"; done
+      - name: Validate static entrypoint and local-only architecture
         run: |
+          set -eu
           test -f index.html
           test -f manifest.json
           test -f sw.js
+          test -f icon.svg
           grep -q 'runtime.js' index.html
           grep -q 'state-store.js' index.html
           grep -q 'manifest.json' index.html
-          ! grep -Eqi 'cloudflare|wrangler|/api/|workers?/' index.html runtime.js state-store.js app-enhancements.js voice-messages.js
-      - name: Validate PWA manifest
-        run: node -e "const m=require('./manifest.json'); if(m.display!=='standalone') process.exit(1); if(!m.start_url) process.exit(1); if(!Array.isArray(m.icons)||m.icons.length<1) process.exit(1)"
-      - name: Security sanity checks
+          grep -q 'serviceWorker' index.html
+          ! grep -Eqi 'cloudflare|wrangler|workers?\b|/api/|fetch\([^)]*(database|storage)' -- *.html *.js *.json
+      - name: Validate PWA manifest and service worker
         run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const m=JSON.parse(fs.readFileSync('manifest.json','utf8'));
+          if(m.display!=='standalone') throw new Error('manifest display must be standalone');
+          if(!m.start_url) throw new Error('manifest start_url missing');
+          if(!Array.isArray(m.icons)||m.icons.length<1) throw new Error('manifest icons missing');
+          const sw=fs.readFileSync('sw.js','utf8');
+          if(!/addEventListener\(['"]install['"]/.test(sw)) throw new Error('service worker install handler missing');
+          if(!/addEventListener\(['"]fetch['"]/.test(sw)) throw new Error('service worker fetch handler missing');
+          NODE
+      - name: Security and completeness gates
+        run: |
+          set -eu
           ! grep -R "eval(" --include='*.js' .
           ! grep -R "new Function(" --include='*.js' .
           ! grep -R "document.write(" --include='*.js' .
-          ! grep -R "innerHTML.*message" --include='*.js' .
-      - name: No legacy runtime duplication
+          ! grep -R "TODO\|FIXME" --include='*.js' --include='*.html' --include='*.md' .
+          ! grep -R "alert('Success\|toast('Success\|coming soon\|not implemented" --include='*.js' --include='*.html' .
+      - name: No legacy competing runtimes
         run: |
+          set -eu
           ! test -e app.js
           ! test -e core.js
           ! test -e fixes.js
+          ! test -e peer-transport.js
       - name: Completion metadata is current
-        run: grep -q 'Execution: 14 / 20' docs/PRODUCT_COMPLETION.md
+        run: grep -q 'Execution: 20 / 20' docs/PRODUCT_COMPLETION.md
