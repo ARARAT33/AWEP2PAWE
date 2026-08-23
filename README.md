@@ -1,45 +1,41 @@
 # AWEP2PAWE
 
-**AWEP2PAWE** is a browser-first, static P2P workspace concept combining a modern messenger interface with device-owned resource identities.
+**AWEP2PAWE** is a browser-first, 100% static P2P workspace combining a messenger interface with device-owned resource identities.
 
 ## Resource model
 
-- **FID** — shared file identity. The resource is associated with its owner's device and is intended to be available while that device is reachable.
-- **PFID** — private file identity protected by a password-derived authorization key.
-- **SID** — shared resource identity for a browser-compatible site, application or folder resource.
+- **FID** — public file identity. The file is kept in the owner's browser storage and can be requested while the owner is connected.
+- **PFID** — private file identity. The local file is encrypted and access requires the password plus an active owner session.
+- **SID** — shared identity for browser-oriented site/resource content.
 - **PSID** — private SID protected by password-derived authorization.
+- **AWE ID** — the local identity label for the current browser profile.
 
-## Static-first design
+## Static architecture
 
-The application is delivered as plain HTML, CSS and JavaScript. There is no required server runtime for loading the interface. Local identity and resource metadata use browser storage; cryptographic primitives are provided by the browser's Web Crypto API.
+The application is plain HTML, CSS and JavaScript. It has no required application backend and no package/framework dependency. It uses browser APIs including IndexedDB, Web Crypto and WebRTC DataChannels.
 
-The repository intentionally contains no framework or package dependency. It can be served directly from any static file host or opened from a local web server.
+The site can therefore be deployed as static files. The P2P runtime itself executes inside the browser.
 
-## Security direction
+## P2P transport
 
-Private resources must never store a plaintext password. The production protocol should derive authorization material from a password using a memory-hard KDF, bind access to the owner's device identity, encrypt private resource content, and verify every transferred chunk against its expected cryptographic digest.
+The current runtime contains a WebRTC DataChannel flow. Connection descriptions are exchanged as text between users, so a mandatory signaling server is not required by the static application. The data channel can carry chat messages and resource transfers directly between peers.
 
-## P2P direction
+A network that blocks direct WebRTC connectivity may prevent a direct connection. A future relay/signaling layer can be added as an optional network component without changing the static application shell.
 
-A completely static application can implement peer transport in the browser, but peers still need a signaling path or an explicit signaling exchange to discover and establish a connection. This project keeps the UI and resource model independent of a mandatory backend so that the transport layer can evolve without changing the application shell.
+## Resource integrity
 
-## Current static build
+Public file identities are derived from SHA-256 content hashes. Received file bytes are verified against the announced hash before the browser releases the download.
 
-The current build provides:
+## Private resources
 
-- responsive messenger UI
-- light/dark themes
-- local AWE ID generation
-- chat composer and chat navigation
-- FID/PFID/SID/PSID resource creation UI
-- local resource registry
-- file selection and local FID registration
-- copy/share interactions
-- browser-local persistence
-- mobile layout
+Private file content uses browser Web Crypto primitives with PBKDF2-derived AES-256-GCM keys. Plaintext passwords are not stored. The security model is local-first and should receive independent cryptographic review before production use for high-value secrets.
 
-The resource cards are the foundation for the real peer protocol; they do not pretend that a browser can bypass its security sandbox or provide cross-device connectivity without a transport/signaling exchange.
+## Local-first storage
 
-## License
+Resource metadata, preferences and message records stay in browser storage. File content is stored locally for the owner's active browser profile.
 
-See the repository license before redistribution or reuse.
+## UI
+
+The static interface includes Armenian responsive messenger screens, chats, contacts, resources, files, P2P controls, settings and light/dark themes.
+
+The design intentionally keeps the messenger experience inside one static application while the FID/PFID/SID/PSID layer handles device-owned resources.
