@@ -1,5 +1,5 @@
-const CACHE='awep2pawe-v13';
-const CORE=['./','./index.html','./styles.css','./messenger.css','./light-performance.css','./state-store.js','./runtime.js','./voice-messages.js','./app-enhancements.js','./messenger-actions.js','./social-runtime.js','./sid-runtime.js','./cfid.js','./p2p-media.js','./manifest.json','./icon.svg','./static-connect.js'];
+const CACHE='awep2pawe-v14';
+const CORE=['./','./index.html','./styles.css','./messenger.css','./light-performance.css','./state-store.js','./runtime.js','./voice-messages.js','./app-enhancements.js','./messenger-actions.js','./social-runtime.js','./sid-runtime.js','./cfid.js','./manifest.json','./icon.svg','./static-connect.js'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
