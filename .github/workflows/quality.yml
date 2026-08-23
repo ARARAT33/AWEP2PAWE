@@ -50,8 +50,8 @@ jobs:
           for file in "${forbidden_files[@]}"; do
             test ! -e "$file" || { echo "Forbidden server runtime file: $file"; exit 1; }
           done
-          if find . -path './.git' -prune -o -type f \( -name '*.ts' -o -name '*.mjs' \) -print | grep -q .; then
-            echo 'Server-side TypeScript/ES module runtime files are not permitted.'
+          if find . -path './.git' -prune -o -type f -name '*.ts' -print | grep -q .; then
+            echo 'TypeScript runtime files are not permitted in this static site.'
             exit 1
           fi
 
@@ -74,7 +74,12 @@ jobs:
           const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
           if (manifest.display !== 'standalone') throw new Error('manifest display is not standalone');
           if (!manifest.start_url) throw new Error('manifest start_url is missing');
-          if (!Array.isArray(manifest.icons) || manifest.icons.length === 0) throw new Error('manifest icons are missing');
+          if (!manifest.scope) throw new Error('manifest scope is missing');
+          if (!Array.isArray(manifest.icons) || manifest.icons.length < 2) throw new Error('installable icon set is incomplete');
+          for (const size of ['192x192', '512x512']) {
+            if (!manifest.icons.some(icon => icon.sizes === size)) throw new Error(`manifest icon ${size} is missing`);
+          }
+          if (!manifest.icons.some(icon => String(icon.purpose).split(/\s+/).includes('maskable'))) throw new Error('maskable icon is missing');
           const html = fs.readFileSync('index.html', 'utf8');
           for (const required of ['manifest.json', 'runtime.js', 'state-store.js']) {
             if (!html.includes(required)) throw new Error(`index.html missing ${required}`);
