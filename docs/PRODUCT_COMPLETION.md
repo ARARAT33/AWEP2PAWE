@@ -20,35 +20,15 @@ Implemented: real WebRTC microphone/camera/screen media capture, remote media re
 
 ## Execution 5
 
-Implemented:
-
-- real local FID creation from user-selected files
-- SHA-256 content hashing for FID identity and per-file integrity metadata
-- real PFID password-derived AES-256-GCM encryption using PBKDF2 with 310,000 iterations and random salt/IV
-- IndexedDB persistence for resource records
-- real SID/PSID folder selection through the browser directory picker
-- per-file metadata and content hashing for selected folders
-- resource ID generation from deterministic metadata/hash material
-- resource detail/share dialog and ID clipboard copy
-- resource engine loaded entirely as a static same-origin JavaScript module
-- no Worker, Function, cloud database or cloud file storage added
+Implemented: real local FID creation from selected files, SHA-256 content hashing, password-derived AES-256-GCM PFID encryption, IndexedDB resource persistence, SID/PSID directory selection, per-file metadata/hashing, resource IDs and static resource engine.
 
 ## Execution 6
 
-Implemented:
+Implemented: real MediaRecorder voice-message capture, browser MIME selection, microphone handling, bounded recording, random transfer IDs, 28 KiB DataChannel chunks, backpressure, ordered reconstruction and local/remote audio playback.
 
-- real browser MediaRecorder voice-message capture
-- microphone permission and unsupported-browser handling
-- Opus/WebM or the best supported browser audio MIME type
-- 60-second maximum recording duration
-- random per-message transfer identifiers
-- 28 KiB P2P DataChannel voice chunks
-- DataChannel backpressure handling during voice transfer
-- ordered chunk reconstruction on the receiving peer
-- remote Blob reconstruction and native audio playback
-- sender-side local playback confirmation
-- lightweight mobile composer voice control
-- static same-origin script integration with the existing P2P runtime
+## Execution 7
+
+Implemented: hardened WebRTC media-call runtime with configurable ICE servers, max-bundle negotiation, explicit ICE/connection state reporting, connection timeout handling, ICE restart recovery, constrained audio capture with echo/noise controls, HD video constraints, device enumeration, microphone switching, camera switching, screen-track replacement, mute/camera state control, deterministic media cleanup and versioned call signaling payloads. No Workers, Functions, cloud database or cloud file storage added.
 
 ## Acceptance rule
 
@@ -60,6 +40,6 @@ AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and
 
 ## Status
 
-Execution: 6 / 20
+Execution: 7 / 20
 
 This document must remain conservative and must never be changed to 100% merely because source code exists. The final 100% statement is reserved for a verified final execution.
