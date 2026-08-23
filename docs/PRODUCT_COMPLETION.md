@@ -40,15 +40,19 @@ Implemented: durable IndexedDB application-state layer with schema versioning an
 
 ## Execution 10
 
-Implemented: browser-native cryptographic identity bootstrap. A persistent AWE UID is generated with `crypto.randomUUID()`, synchronized into the existing application state before the main runtime starts, and paired with a P-256 ECDSA identity whose private `CryptoKey` is generated non-extractably and persisted directly by IndexedDB. Signing and public-key verification helpers are exposed through `AWEStateStore`; private key bytes are never serialized into localStorage or application backups.
+Implemented: browser-native cryptographic identity bootstrap. A persistent AWE UID is generated with `crypto.randomUUID()`, synchronized into the existing application state before the main runtime starts, and paired with a P-256 ECDSA identity whose private `CryptoKey` is generated non-extractably and persisted directly by IndexedDB. Private key bytes are never serialized into localStorage or application backups.
 
 ## Execution 11
 
-Implemented: authoritative IndexedDB identity lifecycle. Existing non-extractable identity records now remain the source of truth for the permanent AWE UID, so clearing or losing the localStorage mirror no longer rotates identity. Web Crypto is now required for cryptographic identity creation rather than silently falling back to an unprotected identity record, and identity hydration repairs the local UID mirror from the durable record.
+Implemented: authoritative IndexedDB identity lifecycle. Existing non-extractable identity records remain the source of truth for the permanent AWE UID, so clearing or losing the localStorage mirror no longer rotates identity. Web Crypto is required for cryptographic identity creation rather than silently falling back to an unprotected identity record, and identity hydration repairs the local UID mirror from the durable record.
 
 ## Execution 12
 
-Implemented: persistent identity enforcement and signed identity assertions. Identity initialization now fails closed when Web Crypto or IndexedDB is unavailable instead of silently creating an unprotected identity. Identity reads validate the durable non-extractable private key, and `AWEStateStore.identityAssertion()` / `verifyAssertion()` provide a browser-native signed binding between an AWE UID and its public key for authenticated peer handshakes.
+Implemented: persistent identity enforcement and signed identity assertions. Identity initialization fails closed when Web Crypto or IndexedDB is unavailable instead of silently creating an unprotected identity. Identity reads validate the durable non-extractable private key, and `AWEStateStore.identityAssertion()` / `verifyAssertion()` provide a browser-native signed binding between an AWE UID and its public key for authenticated peer handshakes.
+
+## Execution 13
+
+Implemented: removed the duplicate extractable ECDH identity from the main runtime. P2P sessions now use fresh, non-persistent P-256 ECDH session keys while the durable AWE UID and identity remain authoritative in `AWEStateStore`. Signaling and live DataChannel handshakes carry signed identity assertions binding UID, identity key, ephemeral session key and nonce. Replayed handshake nonces are rejected. AES-GCM is used for the application message envelope once the authenticated session is established. Local messages are retained with an explicit `queued` delivery state when the peer is offline instead of falsely reporting successful delivery. File transfer remains bounded and SHA-256 verified.
 
 ## Acceptance rule
 
@@ -58,8 +62,12 @@ A feature is complete only when the implementation is real and its observable br
 
 AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and resource metadata are not uploaded to a cloud database. Files are not stored in cloud storage. Direct WebRTC signaling remains explicit because a browser cannot discover an arbitrary Internet peer from a UID alone without a rendezvous path.
 
-## Status
+## Current conservative status
 
-Execution: 12 / 20
+Execution: 13 / 20
 
-This document remains conservative and must never be changed to 100% merely because source code exists. The final 100% statement is reserved for a verified final execution.
+Estimated product implementation coverage: **~44%**.
+
+This percentage is an engineering coverage estimate, not a test pass rate. The repository has real foundations for identity, local persistence, P2P transport, encrypted session messaging, basic file transfer, media capture/calls, resource IDs, and PWA delivery, but substantial acceptance areas are still incomplete: full messenger actions and synchronization, real group/channel protocols, resumable multi-file/folder transfers, PFID/PSID end-to-end sharing/authorization, CFID resolution, actual browser-compatible SID serving over P2P, complete call signaling/state UX, broader discovery/rendezvous compatibility, comprehensive automated browser/P2P tests, and final performance/security validation.
+
+The final 100% statement is reserved for a verified final execution and must not be inferred from source-code presence alone.
