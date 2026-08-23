@@ -34,6 +34,10 @@ Implemented: hardened WebRTC media-call runtime with configurable ICE servers, m
 
 Implemented: hardened direct P2P transport with versioned signaling packets, strict signal/message size limits, bounded DataChannel buffering with backpressure timeout, explicit connection-open timeout, ICE failure recovery, reconnect support, max-bundle/rtcp-mux negotiation and invalid-message rejection. The transport remains static-only and does not introduce a backend or remote persistence.
 
+## Execution 9
+
+Implemented: durable IndexedDB application-state layer with schema versioning and automatic legacy-state migration. The state layer is loaded before the application runtime and mirrors local runtime state into IndexedDB, while preserving the existing lightweight bootstrap compatibility path. No cloud database, Workers or Functions were introduced.
+
 ## Acceptance rule
 
 A feature is complete only when the implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
@@ -44,6 +48,6 @@ AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and
 
 ## Status
 
-Execution: 8 / 20
+Execution: 9 / 20
 
 This document must remain conservative and must never be changed to 100% merely because source code exists. The final 100% statement is reserved for a verified final execution.
