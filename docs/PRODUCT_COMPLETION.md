@@ -30,6 +30,10 @@ Implemented: real MediaRecorder voice-message capture, browser MIME selection, m
 
 Implemented: hardened WebRTC media-call runtime with configurable ICE servers, max-bundle negotiation, explicit ICE/connection state reporting, connection timeout handling, ICE restart recovery, constrained audio capture with echo/noise controls, HD video constraints, device enumeration, microphone switching, camera switching, screen-track replacement, mute/camera state control, deterministic media cleanup and versioned call signaling payloads. No Workers, Functions, cloud database or cloud file storage added.
 
+## Execution 8
+
+Implemented: hardened direct P2P transport with versioned signaling packets, strict signal/message size limits, bounded DataChannel buffering with backpressure timeout, explicit connection-open timeout, ICE failure recovery, reconnect support, max-bundle/rtcp-mux negotiation and invalid-message rejection. The transport remains static-only and does not introduce a backend or remote persistence.
+
 ## Acceptance rule
 
 A feature is complete only when the implementation is real and its observable browser flow is validated. UI-only placeholders do not count.
@@ -40,6 +44,6 @@ AWEP2PAWE remains a static/PWA/local-first application. Messages, identities and
 
 ## Status
 
-Execution: 7 / 20
+Execution: 8 / 20
 
 This document must remain conservative and must never be changed to 100% merely because source code exists. The final 100% statement is reserved for a verified final execution.
