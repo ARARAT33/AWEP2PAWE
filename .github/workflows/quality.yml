@@ -1,0 +1,36 @@
+name: AWEP2PAWE Quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  static-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check JavaScript
+        run: |
+          node --check runtime.js
+          node --check app.js
+          node --check messenger.js
+          node --check pwa.js
+          node --check lite-ui.js
+          node --check fixes.js
+      - name: Required PWA assets
+        run: |
+          test -f index.html
+          test -f manifest.json
+          test -f sw.js
+          grep -q 'runtime.js' index.html
+          grep -q 'manifest.json' index.html
+      - name: Security sanity checks
+        run: |
+          ! grep -R "eval(" --include='*.js' .
+          ! grep -R "innerHTML.*message" --include='*.js' .
