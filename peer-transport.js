@@ -1,17 +1,21 @@
 (()=>{'use strict';
-const iceServers=[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}];
-const waitIce=pc=>new Promise(resolve=>{if(pc.iceGatheringState==='complete')return resolve();const done=()=>{if(pc.iceGatheringState==='complete'){pc.removeEventListener('icegatheringstatechange',done);resolve()}};pc.addEventListener('icegatheringstatechange',done);setTimeout(resolve,5000)});
-const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o))));
-const dec=s=>JSON.parse(decodeURIComponent(escape(atob(s))));
+/* AWEP2PAWE direct transport: static-only, bounded, timeout-aware WebRTC DataChannel. */
+const iceServers=[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},{urls:'stun:stun.cloudflare.com:3478'}];
+const MAX_SIGNAL=256*1024,MAX_MESSAGE=4*1024*1024,OPEN_TIMEOUT=15000,ICE_TIMEOUT=8000;
+const waitIce=pc=>new Promise(resolve=>{if(pc.iceGatheringState==='complete')return resolve();let done=false;const finish=()=>{if(done)return;done=true;pc.removeEventListener('icegatheringstatechange',check);resolve()};const check=()=>{if(pc.iceGatheringState==='complete')finish()};pc.addEventListener('icegatheringstatechange',check);setTimeout(finish,ICE_TIMEOUT)});
+const enc=o=>{const s=JSON.stringify(o);if(s.length>MAX_SIGNAL)throw Error('Signal packet too large');return btoa(unescape(encodeURIComponent(s)))};
+const dec=s=>{if(typeof s!=='string'||s.length>MAX_SIGNAL)throw Error('Invalid signal size');const o=JSON.parse(decodeURIComponent(escape(atob(s))));if(!o||typeof o!=='object')throw Error('Invalid signal');return o};
+const waitOpen=dc=>new Promise((resolve,reject)=>{if(dc.readyState==='open')return resolve();const started=Date.now();const timer=setInterval(()=>{if(dc.readyState==='open'){clearInterval(timer);resolve()}else if(Date.now()-started>OPEN_TIMEOUT){clearInterval(timer);reject(Error('Peer connection timeout'))}},100)});
 class PeerTransport{
- constructor(){this.pc=null;this.dc=null;this.role=null;this.onmessage=null;this.onstate=null;this.onchannel=null}
- create(){this.pc=new RTCPeerConnection({iceServers});this.pc.onconnectionstatechange=()=>this.onstate?.(this.pc.connectionState);this.pc.ondatachannel=e=>{this.dc=e.channel;this.bind()};return this.pc}
- bind(){if(!this.dc)return;this.dc.binaryType='arraybuffer';this.dc.onopen=()=>this.onstate?.('connected');this.dc.onclose=()=>this.onstate?.('closed');this.dc.onerror=e=>this.onstate?.('error');this.dc.onmessage=e=>{try{this.onmessage?.(typeof e.data==='string'?dec(e.data):e.data)}catch{this.onstate?.('invalid-message')}};this.onchannel?.(this.dc)}
- async offer(){this.role='offer';this.create();this.dc=this.pc.createDataChannel('awe-data',{ordered:true});this.bind();const o=await this.pc.createOffer();await this.pc.setLocalDescription(o);await waitIce(this.pc);return enc({type:'offer',sdp:this.pc.localDescription})}
- async answer(code){this.role='answer';if(!this.pc)this.create();const x=dec(code);if(x.type!=='offer')throw Error('Expected offer');await this.pc.setRemoteDescription(x.sdp);const a=await this.pc.createAnswer();await this.pc.setLocalDescription(a);await waitIce(this.pc);return enc({type:'answer',sdp:this.pc.localDescription})}
- async acceptAnswer(code){const x=dec(code);if(x.type!=='answer')throw Error('Expected answer');await this.pc.setRemoteDescription(x.sdp);return true}
- send(o){if(this.dc?.readyState!=='open')throw Error('Peer is not connected');this.dc.send(typeof o==='string'?o:enc(o))}
- close(){this.dc?.close();this.pc?.close();this.dc=null;this.pc=null}
+ constructor(){this.pc=null;this.dc=null;this.role=null;this.onmessage=null;this.onstate=null;this.onchannel=null;this.closed=false}
+ create(){this.closed=false;this.pc=new RTCPeerConnection({iceServers,bundlePolicy:'max-bundle',rtcpMuxPolicy:'require'});this.pc.onconnectionstatechange=()=>{const s=this.pc.connectionState;this.onstate?.(s);if((s==='failed'||s==='disconnected')&&!this.closed)this.onstate?.('reconnecting')};this.pc.oniceconnectionstatechange=()=>{if(this.pc.iceConnectionState==='failed'&&!this.closed)this.pc.restartIce?.()};this.pc.ondatachannel=e=>{if(this.dc&&this.dc!==e.channel){e.channel.close();return}this.dc=e.channel;this.bind()};return this.pc}
+ bind(){if(!this.dc)return;this.dc.binaryType='arraybuffer';this.dc.bufferedAmountLowThreshold=256*1024;this.dc.onopen=()=>this.onstate?.('connected');this.dc.onclose=()=>this.onstate?.('closed');this.dc.onerror=()=>this.onstate?.('error');this.dc.onmessage=e=>{try{if(typeof e.data==='string'){if(e.data.length>MAX_MESSAGE)throw Error('Message too large');this.onmessage?.(dec(e.data))}else if(e.data instanceof ArrayBuffer){if(e.data.byteLength>MAX_MESSAGE)throw Error('Message too large');this.onmessage?.(e.data)}}catch{this.onstate?.('invalid-message')}};this.onchannel?.(this.dc)}
+ async offer(){this.role='offer';this.create();this.dc=this.pc.createDataChannel('awe-data',{ordered:true,maxRetransmits:null});this.bind();const o=await this.pc.createOffer();await this.pc.setLocalDescription(o);await waitIce(this.pc);return enc({v:2,type:'offer',sdp:this.pc.localDescription})}
+ async answer(code){this.role='answer';if(!this.pc)this.create();const x=dec(code);if(x.v!==2||x.type!=='offer'||!x.sdp)throw Error('Expected v2 offer');await this.pc.setRemoteDescription(x.sdp);const a=await this.pc.createAnswer();await this.pc.setLocalDescription(a);await waitIce(this.pc);return enc({v:2,type:'answer',sdp:this.pc.localDescription})}
+ async acceptAnswer(code){const x=dec(code);if(x.v!==2||x.type!=='answer'||!x.sdp)throw Error('Expected v2 answer');if(!this.pc)throw Error('No pending offer');await this.pc.setRemoteDescription(x.sdp);await waitOpen(this.dc);return true}
+ async send(o){if(this.dc?.readyState!=='open')throw Error('Peer is not connected');const payload=typeof o==='string'?o:enc(o);if(payload.length>MAX_MESSAGE)throw Error('Message too large');if(this.dc.bufferedAmount>1024*1024)await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{this.dc.removeEventListener('bufferedamountlow',done);reject(Error('DataChannel backpressure timeout'))},OPEN_TIMEOUT);const done=()=>{clearTimeout(timer);this.dc.removeEventListener('bufferedamountlow',done);resolve()};this.dc.addEventListener('bufferedamountlow',done)});this.dc.send(payload)}
+ async reconnect(){if(!this.pc||this.closed)throw Error('Transport closed');this.pc.restartIce?.();this.onstate?.('reconnecting');await waitIce(this.pc)}
+ close(){this.closed=true;this.dc?.close();this.pc?.close();this.dc=null;this.pc=null;this.onstate?.('closed')}
 }
 window.AWEPeerTransport=PeerTransport;
 })();
