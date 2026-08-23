@@ -1,0 +1,12 @@
+{
+  "name": "AWEP2PAWE",
+  "short_name": "AWEP2PAWE",
+  "description": "Static P2P messenger and local resource network",
+  "lang": "hy",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
+  "icons": []
+}
