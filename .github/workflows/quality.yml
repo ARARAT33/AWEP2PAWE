@@ -2,86 +2,128 @@ name: AWEP2PAWE Quality
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  static-quality:
+  quality:
+    name: Static PWA quality
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: 22
+          cache: npm
 
-      - name: Check JavaScript syntax
+      - name: Validate required files
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            index.html
+            manifest.json
+            sw.js
+            icon.svg
+            styles.css
+            light-performance.css
+            messenger.css
+            runtime.js
+            state-store.js
+            static-connect.js
+            voice-messages.js
+            app-enhancements.js
+            messenger-actions.js
+            social-runtime.js
+            sid-runtime.js
+            cfid.js
+            tests/browser-smoke.mjs
+            docs/PRODUCT_COMPLETION.md
+          )
+          for file in "${required[@]}"; do
+            test -f "$file" || { echo "Missing: $file"; exit 1; }
+          done
+
+      - name: Validate static-only architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RniE 'cloudflare|wrangler|workers?\b|/api/' \
+            --include='*.html' --include='*.js' --include='*.json' --exclude-dir='.git' .; then
+            echo 'Forbidden server/runtime reference found.'
+            exit 1
+          fi
+
+      - name: Validate JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
           shopt -s nullglob
           files=( *.js )
-          if (( ${#files[@]} == 0 )); then
-            echo 'No root JavaScript files found'
-          else
-            for file in "${files[@]}"; do
-              node --check "$file"
-            done
-          fi
+          test "${#files[@]}" -gt 0
+          for file in "${files[@]}"; do
+            node --check "$file"
+          done
           node --check tests/browser-smoke.mjs
 
-      - name: Validate static application
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f index.html
-          test -f manifest.json
-          test -f sw.js
-          test -f icon.svg
-          test -f state-store.js
-          test -f static-connect.js
-          grep -q 'runtime.js' index.html
-          grep -q 'manifest.json' index.html
-          grep -q 'serviceWorker' index.html
-          if grep -Eqi 'cloudflare|wrangler|/api/' -- *.html *.js *.json; then
-            echo 'Forbidden server-side/cloud dependency detected'
-            exit 1
-          fi
-
-      - name: Validate PWA files
+      - name: Validate PWA metadata
         shell: bash
         run: |
           set -euo pipefail
           node <<'NODE'
           const fs = require('fs');
           const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
-          if (manifest.display !== 'standalone') throw new Error('manifest display must be standalone');
-          if (!manifest.start_url) throw new Error('manifest start_url missing');
-          if (!Array.isArray(manifest.icons) || manifest.icons.length === 0) throw new Error('manifest icons missing');
+          if (manifest.display !== 'standalone') throw new Error('manifest display is not standalone');
+          if (!manifest.start_url) throw new Error('manifest start_url is missing');
+          if (!Array.isArray(manifest.icons) || manifest.icons.length === 0) throw new Error('manifest icons are missing');
+
+          const html = fs.readFileSync('index.html', 'utf8');
+          for (const required of ['manifest.json', 'runtime.js', 'state-store.js']) {
+            if (!html.includes(required)) throw new Error(`index.html missing ${required}`);
+          }
+          if (!html.includes('serviceWorker')) throw new Error('service worker registration missing');
+
           const sw = fs.readFileSync('sw.js', 'utf8');
-          if (!sw.includes("addEventListener('install'")) throw new Error('service worker install handler missing');
-          if (!sw.includes("addEventListener('fetch'")) throw new Error('service worker fetch handler missing');
+          for (const required of ["addEventListener('install'", "addEventListener('fetch'"]) {
+            if (!sw.includes(required)) throw new Error(`service worker missing ${required}`);
+          }
+          for (const forbidden of ['peer-transport.js', 'app.js', 'core.js', 'fixes.js', 'messenger.js', 'lite-ui.js', 'p2p-media.js', 'pwa.css']) {
+            if (sw.includes(`./${forbidden}`)) throw new Error(`legacy runtime referenced: ${forbidden}`);
+          }
+          for (const required of ['state-store.js', 'runtime.js', 'voice-messages.js', 'app-enhancements.js', 'messenger-actions.js', 'social-runtime.js', 'sid-runtime.js', 'cfid.js', 'static-connect.js']) {
+            if (!sw.includes(`./${required}`)) throw new Error(`service worker missing ${required}`);
+          }
           NODE
 
       - name: Security and completeness checks
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -n 'eval(' --include='*.js' .; then exit 1; fi
-          if grep -R -n 'new Function(' --include='*.js' .; then exit 1; fi
-          if grep -R -n 'document.write(' --include='*.js' .; then exit 1; fi
-          if grep -R -n -E 'TODO|FIXME|coming soon|not implemented|placeholder' --include='*.js' --include='*.html' --include='*.md' .; then exit 1; fi
+          if grep -RniE 'eval\(|new Function\(|document\.write\(' --include='*.js' --exclude-dir='.git' .; then
+            echo 'Unsafe JavaScript construct found.'
+            exit 1
+          fi
+          if grep -RniE 'TODO|FIXME|coming soon|not implemented|placeholder' \
+            --include='*.js' --include='*.html' --include='*.md' --exclude-dir='.git' .; then
+            echo 'Incomplete implementation marker found.'
+            exit 1
+          fi
 
-      - name: Ensure legacy runtimes are absent
+      - name: Verify legacy runtimes are removed
         shell: bash
         run: |
           set -euo pipefail
           for file in app.js core.js fixes.js peer-transport.js messenger.js lite-ui.js p2p-media.js pwa.css; do
-            test ! -e "$file"
+            test ! -e "$file" || { echo "Legacy file still exists: $file"; exit 1; }
           done
 
       - name: Install Playwright
@@ -92,10 +134,13 @@ jobs:
         shell: bash
         run: npx playwright install --with-deps chromium
 
-      - name: Run browser smoke test
+      - name: Run browser smoke tests
         shell: bash
         run: node tests/browser-smoke.mjs
 
-      - name: Verify completion metadata
+      - name: Verify completion record
         shell: bash
-        run: grep -q 'Execution: 20 / 20' docs/PRODUCT_COMPLETION.md
+        run: |
+          set -euo pipefail
+          test -s docs/PRODUCT_COMPLETION.md
+          grep -q 'Execution: 20 / 20' docs/PRODUCT_COMPLETION.md
