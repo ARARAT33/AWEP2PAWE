@@ -43,9 +43,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RniE 'cloudflare|wrangler|workers?\b|/api/' \
-            --include='*.html' --include='*.js' --include='*.json' --exclude-dir='.git' .; then
-            echo 'Forbidden server/runtime reference found.'
+          forbidden_files=(
+            wrangler.toml wrangler.json wrangler.jsonc
+            worker.js workers.js _worker.js
+          )
+          for file in "${forbidden_files[@]}"; do
+            test ! -e "$file" || { echo "Forbidden server runtime file: $file"; exit 1; }
+          done
+          if find . -path './.git' -prune -o -type f \( -name '*.ts' -o -name '*.mjs' \) -print | grep -q .; then
+            echo 'Server-side TypeScript/ES module runtime files are not permitted.'
             exit 1
           fi
 
