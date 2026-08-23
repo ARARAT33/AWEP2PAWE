@@ -21,6 +21,7 @@ jobs:
           files=$(find . -maxdepth 1 -type f -name '*.js' -print)
           test -n "$files"
           for f in $files; do node --check "$f"; done
+          node --check tests/browser-smoke.mjs
       - name: Validate static entrypoint and local-only architecture
         run: |
           set -eu
@@ -65,5 +66,10 @@ jobs:
           for f in app.js core.js fixes.js peer-transport.js messenger.js lite-ui.js p2p-media.js pwa.css; do
             test ! -e "$f"
           done
+      - name: Real browser PWA, offline and WebRTC smoke test
+        run: |
+          set -eu
+          npm exec --yes --package=playwright@1.55.0 playwright install --with-deps chromium
+          npm exec --yes --package=playwright@1.55.0 node tests/browser-smoke.mjs
       - name: Completion metadata is current
         run: grep -q 'Execution: 20 / 20' docs/PRODUCT_COMPLETION.md
