@@ -36,4 +36,10 @@ let timer=0;function mirror(){clearTimeout(timer);timer=setTimeout(()=>{const va
 const originalSet=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){originalSet.call(this,k,v);if(k===LEGACY)mirror()};
 window.AWEStateStore={hydrate,read,write,getIdentity,sign,verify,identityAssertion,verifyAssertion,version:VERSION};
 hydrate().catch(e=>{window.AWEStateStore.error=e;console.error('AWEP2PAWE persistent identity initialization failed',e)});
+
+/* Load optional static-only UX enhancements without adding a backend. */
+addEventListener('DOMContentLoaded',()=>{const s=document.createElement('script');s.src='./static-connect.js';s.async=false;s.onerror=()=>{};document.head.appendChild(s)},{once:true});
+
+/* Clear local application data means all local data, including the durable identity. */
+addEventListener('DOMContentLoaded',()=>{const clear=document.querySelector('#clear-data');if(!clear)return;clear.addEventListener('click',async e=>{e.preventDefault();e.stopImmediatePropagation();if(!confirm('Delete all local data and this device identity?'))return;try{localStorage.clear();const d=await indexedDB.databases?.();if(Array.isArray(d)&&d.some(x=>x.name===DB)){await new Promise((resolve,reject)=>{const r=indexedDB.deleteDatabase(DB);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error('Local database is busy'))})}else{await new Promise((resolve,reject)=>{const r=indexedDB.deleteDatabase(DB);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error('Local database is busy'))})}location.reload()}catch(err){console.error(err);alert('Local data could not be fully deleted. Close other AWEP2PAWE tabs and try again.')}},{capture:true})},{once:true});
 })();
