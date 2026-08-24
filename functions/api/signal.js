@@ -39,10 +39,19 @@ export async function onRequest(context) {
 
   if (body.action === "offer") {
     if (!validClient(body.client) || !validSdp(body.offer)) return json({ ok: false, error: "invalid offer" }, 400);
+    if (sessions.has(token)) return json({ ok: false, error: "session collision — generate a new QR" }, 409);
     const exp = Math.min(Number(body.exp) || now + TTL, now + TTL);
-    session = { offer: body.offer, owner: body.client, exp, touched: now, request: null };
+    session = {
+      offer: body.offer,
+      owner: body.client,
+      exp,
+      touched: now,
+      request: null,
+      used: false,
+      issuedAt: now
+    };
     sessions.set(token, session);
-    return json({ ok: true, expires: exp });
+    return json({ ok: true, expires: exp, issuedAt: now });
   }
 
   if (!session || now > session.exp) {
@@ -56,9 +65,13 @@ export async function onRequest(context) {
   switch (body.action) {
     case "request": {
       if (body.client === session.owner) return json({ ok: false, error: "owner cannot request itself" }, 400);
+      if (session.used) return json({ ok: false, error: "QR already used" }, 409);
       if (!validSdp(body.answer)) return json({ ok: false, error: "invalid answer" }, 400);
       if (session.request && session.request.client !== body.client && session.request.status === "pending") {
         return json({ ok: false, error: "another request is pending" }, 409);
+      }
+      if (session.request?.client === body.client && session.request.status === "pending") {
+        return json({ ok: true, status: "pending", duplicate: true });
       }
       session.request = { client: body.client, answer: body.answer, status: "pending", touched: now };
       return json({ ok: true, status: "pending" });
@@ -82,13 +95,16 @@ export async function onRequest(context) {
       if (session.request.status !== "pending") return json({ ok: false, error: "request already closed" }, 409);
       session.request.status = "approved";
       session.request.touched = now;
-      return json({ ok: true, status: "approved" });
+      session.used = true;
+      return json({ ok: true, status: "approved", oneTime: true });
     }
     case "reject": {
       if (body.client !== session.owner || !session.request) return json({ ok: false, error: "no pending request" }, 409);
+      if (session.request.status !== "pending") return json({ ok: false, error: "request already closed" }, 409);
       session.request.status = "rejected";
       session.request.touched = now;
-      return json({ ok: true, status: "rejected" });
+      session.used = true;
+      return json({ ok: true, status: "rejected", oneTime: true });
     }
     default:
       return json({ ok: false, error: "unsupported action" }, 400);
