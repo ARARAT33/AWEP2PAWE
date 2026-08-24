@@ -113,7 +113,8 @@
           <strong id="security-code">—</strong>
         </div>
         <div class="qr-actions">
-          <button id="download-qr" class="ghost compact" disabled>Save QR Code Image</button>
+          <button id="download-qr" class="ghost compact" disabled>Save QR (JPG)</button>
+          <button id="share-qr" class="primary compact" disabled>Share QR</button>
         </div>
         <div class="qr-hint">Scan with camera or select QR image file</div>
       </div>
@@ -181,32 +182,33 @@
   </div>
 </dialog>
 
-<!-- Call Modal -->
+<!-- Active Call Modal -->
 <dialog id="call" class="modal call-modal">
   <button id="close-call" class="close">&times;</button>
   <div class="modal-eyebrow">P2P CALL</div>
   <h2 id="call-title">Call Active</h2>
   <p id="call-state">Connecting...</p>
-  <div>
+  <div class="call-video-box">
     <video id="remote" autoplay playsinline></video>
     <audio id="remote-audio" autoplay></audio>
     <video id="local" autoplay playsinline muted></video>
   </div>
-  <div class="modal-actions call-actions">
+  <div class="call-controls">
     <button id="mute" class="ghost">🎙 Mute</button>
     <button id="camera" class="ghost">📹 Camera</button>
-    <button id="hangup" class="danger">Hang Up</button>
+    <button id="hangup" class="danger">End Call</button>
   </div>
 </dialog>
 
 <!-- Incoming Call Modal -->
-<dialog id="incoming" class="modal">
-  <div class="modal-eyebrow">INCOMING CALL</div>
+<dialog id="incoming" class="modal incoming-modal">
+  <div class="modal-eyebrow">INCOMING P2P CALL</div>
+  <div class="incoming-avatar">📞</div>
   <h2 id="incoming-title">Incoming Call</h2>
-  <p>Your peer is calling you over direct WebRTC connection.</p>
-  <div class="modal-actions">
-    <button id="reject-call" class="danger">Reject</button>
-    <button id="accept-call" class="primary">Answer</button>
+  <p>Your peer is calling you over direct encrypted WebRTC.</p>
+  <div class="incoming-actions">
+    <button id="reject-call" class="danger">Decline</button>
+    <button id="accept-call" class="success-btn">Answer</button>
   </div>
 </dialog>
 
