@@ -8,25 +8,47 @@ const headers = {
   "access-control-allow-methods": "POST, OPTIONS",
   "access-control-allow-headers": "content-type"
 };
-
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers });
 const validToken = v => typeof v === "string" && /^[A-Za-z0-9_-]{20,80}$/.test(v);
 const validClient = v => typeof v === "string" && /^[A-Za-z0-9_-]{12,80}$/.test(v);
 const validSdp = v => typeof v === "string" && v.length > 20 && v.length <= 16000;
+const cacheKey = token => new Request(`https://awep2p-signal.invalid/session/${token}`);
 
-function cleanup() {
-  const now = Date.now();
-  for (const [token, session] of sessions) {
-    if (now - session.touched > TTL || now > session.exp) sessions.delete(token);
+async function loadSession(token) {
+  const local = sessions.get(token);
+  if (local) return local;
+  try {
+    const cached = await caches.default.match(cacheKey(token));
+    if (!cached) return null;
+    const session = await cached.json();
+    if (!session || Date.now() > session.exp) return null;
+    sessions.set(token, session);
+    return session;
+  } catch {
+    return null;
   }
 }
 
+async function saveSession(token, session, ctx) {
+  sessions.set(token, session);
+  try {
+    const response = new Response(JSON.stringify(session), {
+      headers: { "content-type": "application/json", "cache-control": `public, max-age=${Math.max(1, Math.ceil((session.exp - Date.now()) / 1000))}` }
+    });
+    ctx.waitUntil(caches.default.put(cacheKey(token), response));
+  } catch {}
+}
+
+async function deleteSession(token) {
+  sessions.delete(token);
+  try { await caches.default.delete(cacheKey(token)); } catch {}
+}
+
 export async function onRequest(context) {
-  const { request } = context;
+  const { request, waitUntil } = context;
+  const ctx = { waitUntil };
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
   if (request.method !== "POST") return json({ ok: false, error: "method not allowed" }, 405);
-
-  cleanup();
   if ((Number(request.headers.get("content-length")) || 0) > MAX) return json({ ok: false, error: "request too large" }, 413);
 
   let body;
@@ -35,58 +57,44 @@ export async function onRequest(context) {
   if (!validToken(token)) return json({ ok: false, error: "invalid session" }, 400);
 
   const now = Date.now();
-  let session = sessions.get(token);
+  let session = await loadSession(token);
 
   if (body.action === "offer") {
     if (!validClient(body.client) || !validSdp(body.offer)) return json({ ok: false, error: "invalid offer" }, 400);
-    if (sessions.has(token)) return json({ ok: false, error: "session collision — generate a new QR" }, 409);
+    if (session) return json({ ok: false, error: "session collision — generate a new QR" }, 409);
     const exp = Math.min(Number(body.exp) || now + TTL, now + TTL);
-    session = {
-      offer: body.offer,
-      owner: body.client,
-      exp,
-      touched: now,
-      request: null,
-      used: false,
-      issuedAt: now
-    };
-    sessions.set(token, session);
+    session = { offer: body.offer, owner: body.client, exp, touched: now, request: null, used: false, issuedAt: now };
+    await saveSession(token, session, ctx);
     return json({ ok: true, expires: exp, issuedAt: now });
   }
 
   if (!session || now > session.exp) {
-    sessions.delete(token);
+    await deleteSession(token);
     return json({ ok: false, error: "session expired" }, 410);
   }
-  session.touched = now;
-
   if (!validClient(body.client)) return json({ ok: false, error: "invalid client" }, 400);
+  session.touched = now;
 
   switch (body.action) {
     case "request": {
       if (body.client === session.owner) return json({ ok: false, error: "owner cannot request itself" }, 400);
       if (session.used) return json({ ok: false, error: "QR already used" }, 409);
       if (!validSdp(body.answer)) return json({ ok: false, error: "invalid answer" }, 400);
-      if (session.request && session.request.client !== body.client && session.request.status === "pending") {
-        return json({ ok: false, error: "another request is pending" }, 409);
-      }
-      if (session.request?.client === body.client && session.request.status === "pending") {
-        return json({ ok: true, status: "pending", duplicate: true });
-      }
+      if (session.request && session.request.client !== body.client && session.request.status === "pending") return json({ ok: false, error: "another request is pending" }, 409);
+      if (session.request?.client === body.client && session.request.status === "pending") return json({ ok: true, status: "pending", duplicate: true });
       session.request = { client: body.client, answer: body.answer, status: "pending", touched: now };
+      await saveSession(token, session, ctx);
       return json({ ok: true, status: "pending" });
     }
     case "poll": {
-      const requestForOwner = body.client === session.owner;
       const r = session.request;
       if (!r) return json({ ok: true, request: null, answer: null });
       if (now - r.touched > TTL) {
         session.request = null;
+        await saveSession(token, session, ctx);
         return json({ ok: true, request: null, answer: null });
       }
-      if (requestForOwner) {
-        return json({ ok: true, request: { client: r.client, status: r.status } });
-      }
+      if (body.client === session.owner) return json({ ok: true, request: { client: r.client, status: r.status } });
       if (r.client !== body.client) return json({ ok: true, request: null, answer: null });
       return json({ ok: true, request: { status: r.status }, approved: r.status === "approved", answer: r.status === "approved" ? r.answer : null });
     }
@@ -96,6 +104,7 @@ export async function onRequest(context) {
       session.request.status = "approved";
       session.request.touched = now;
       session.used = true;
+      await saveSession(token, session, ctx);
       return json({ ok: true, status: "approved", oneTime: true });
     }
     case "reject": {
@@ -104,6 +113,7 @@ export async function onRequest(context) {
       session.request.status = "rejected";
       session.request.touched = now;
       session.used = true;
+      await saveSession(token, session, ctx);
       return json({ ok: true, status: "rejected", oneTime: true });
     }
     default:
