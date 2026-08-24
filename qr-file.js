@@ -14,6 +14,8 @@ const wire=()=>{
   const input=document.querySelector('#qr-image');
   if(!input||input.__aweWired)return;
   input.__aweWired=true;
+  const open=()=>{input.value='';input.click()};
+  for(const id of ['choose-top','choose'])document.getElementById(id)?.addEventListener('click',open,{capture:true});
   input.addEventListener('change',async e=>{
     const file=e.target.files?.[0];e.target.value='';
     if(!file)return;
