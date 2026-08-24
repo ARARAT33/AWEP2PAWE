@@ -3,7 +3,7 @@ const $=s=>document.querySelector(s),E=new TextEncoder(),D=new TextDecoder();
 const S={pc:null,dc:null,role:null,key:null,remote:null,nonce:null,secret:null,secretRaw:null,call:null,pending:null,rx:new Map(),seen:new Set(),lastQr:null};
 const toast=m=>{const e=$('#toast');if(!e)return;e.textContent=m;e.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>e.classList.remove('show'),2600)};
 const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
-const b64=b=>{const u=b instanceof Uint8Array?b:new Uint8Array(b);let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode(...u.subarray(i,i+0x8000));return btoa(s).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'')};
+const b64=b=>{const u=b instanceof Uint8Array?b:new Uint8Array(b);let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode(...u.subarray(i,i+0x8000));return btoa(s).split('+').join('-').split('/').join('_').replace(/=+$/,'')};
 const ub64=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');s+='='.repeat((4-s.length%4)%4);const x=atob(s),u=new Uint8Array(x.length);for(let i=0;i<x.length;i++)u[i]=x.charCodeAt(i);return u};
 const hex=b=>Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');
 async function sha(v){return new Uint8Array(await crypto.subtle.digest('SHA-256',typeof v==='string'?E.encode(v):v))}
