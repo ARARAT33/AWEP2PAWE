@@ -1,0 +1,33 @@
+name: Repair runtime source
+on:
+  push:
+    paths:
+      - 'runtime.js'
+      - '.github/workflows/repair-runtime.yml'
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repair base64 helper deterministically
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('runtime.js')
+          s=p.read_text(encoding='utf-8')
+          new="""const b64=b=>{const u=b instanceof Uint8Array?b:new Uint8Array(b);let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode(...u.subarray(i,i+0x8000));return btoa(s).split('+').join('-').split('/').join('_').replace(/=+$/,'')};"""
+          s2=re.sub(r"const b64=b=>\{.*?\};\nconst ub64", new+'\nconst ub64', s, count=1, flags=re.S)
+          if s2==s:
+              raise SystemExit('b64 helper pattern not found')
+          p.write_text(s2,encoding='utf-8')
+          PY
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add runtime.js
+          git diff --cached --quiet || git commit -m 'Fix runtime base64 encoding helper'
+          git push
