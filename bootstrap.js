@@ -1,9 +1,9 @@
 (()=>{'use strict';
-const load=(src)=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.async=false;s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});
-const start=()=>{const s=document.createElement('script');s.src='./runtime.js';s.defer=true;document.body.appendChild(s)};
-if(window.qrcode){start();return}
-load('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js').then(start).catch(()=>load('https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js').then(start).catch(()=>{
-const status=document.querySelector('#qr-status');if(status)status.textContent='QR library unavailable — check connection';
-const toast=document.querySelector('#toast');if(toast){toast.textContent='QR generator could not load';toast.classList.add('show')}
-}));
+const sources=[
+ 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js',
+ 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'
+];
+const start=()=>{if(window.__aweRuntimeStarted)return;window.__aweRuntimeStarted=true;const s=document.createElement('script');s.src='./runtime.js';s.defer=true;document.body.appendChild(s)};
+const load=(i=0)=>{if(window.qrcode)return start();if(i>=sources.length){const status=document.querySelector('#qr-status');if(status)status.textContent='QR generator unavailable';const toast=document.querySelector('#toast');if(toast){toast.textContent='QR generator could not load';toast.classList.add('show')}return}const s=document.createElement('script');s.src=sources[i];s.async=false;s.onload=()=>window.qrcode?start():load(i+1);s.onerror=()=>load(i+1);document.head.appendChild(s)};
+load();
 })();
