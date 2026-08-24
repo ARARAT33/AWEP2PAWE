@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="AWEP2PAWE — private static ephemeral peer-to-peer messenger">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://stun.cloudflare.com:3478 https://stun.l.google.com:19302; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://stun.cloudflare.com:3478 https://stun.l.google.com:19302 https://cdn.jsdelivr.net; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <link rel="stylesheet" href="styles.css">
 <title>AWEP2PAWE — Private Static P2P</title>
 </head>
@@ -16,11 +16,12 @@
 <section id="chat" class="chat hidden"><div class="chat-head"><button id="back" class="ghost compact">‹</button><div class="peer-avatar">A</div><div class="peer-title"><b>Private peer</b><small id="peer-state">Waiting for secure P2P connection</small></div><div class="connection-pill"><span></span> P2P</div><div class="call-actions"><button id="voice" class="icon" title="Voice call">☎</button><button id="video" class="icon" title="Video call">◉</button></div></div><div class="chat-security"><span>Session <b id="chat-id">—</b></span><span>Security <b id="security-code-inline">compare the code above</b></span><span>Transport <b>WebRTC</b></span></div><div id="messages" class="messages"><div class="chat-empty"><span>🔒</span><b>Encrypted P2P session</b><small>Messages are sent directly between the two connected browsers.</small></div></div><div id="transfer" class="transfer hidden"><span id="transfer-name">Sending…</span><progress id="transfer-progress" value="0" max="100"></progress></div><form id="composer" class="composer"><label class="attach" title="Send file">＋<input id="file-input" type="file" multiple hidden></label><input id="message" autocomplete="off" maxlength="8000" placeholder="Write a message…"><button class="primary">Send</button></form></section>
 </main>
 <dialog id="scanner"><div class="modal scanner-modal"><button id="close-scan" class="close">×</button><div class="modal-eyebrow">CAMERA QR SCANNER</div><h2>Scan with camera</h2><p id="scanner-status">Allow camera access, then point the camera at the other device's QR code.</p><div class="scanner-frame"><video id="scan-video" autoplay muted playsinline></video><div class="scanner-corners"></div></div><div class="scanner-controls"><button id="scan-camera" class="primary">Start camera</button></div></div></dialog>
-<input id="qr-image" type="file" accept="image/*" hidden>
+<input id="qr-image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
 <dialog id="incoming"><div class="modal"><div class="modal-eyebrow">INCOMING CALL</div><h2 id="incoming-title">Incoming call</h2><p>Answer this call?</p><div class="modal-actions"><button id="reject-call" class="danger">Decline</button><button id="accept-call" class="primary">Answer</button></div></div></dialog>
 <dialog id="call"><div class="modal call-modal"><button id="close-call" class="close">×</button><div class="modal-eyebrow">DIRECT WEBRTC CALL</div><h2 id="call-title">Call</h2><p id="call-state">Connecting…</p><video id="remote" autoplay playsinline></video><video id="local" autoplay muted playsinline></video><audio id="remote-audio" autoplay></audio><div class="call-actions"><button id="mute" class="ghost">🎙 Mute</button><button id="camera" class="ghost">📹 Camera</button><button id="hangup" class="danger">End</button></div></div></dialog>
 <div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" integrity="sha512-2BJF/j/2TII7JcHAPMIT74wLQ8BTk5NqeGAC5ypeSKLa6V96abAl86gvcsrU2etaN4fttehQtcxXXAriYXlDCg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.legacy.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="qr-file.js"></script>
 <script defer src="bootstrap.js"></script>
 </body>
