@@ -5,6 +5,217 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="AWEP2PAWE — private static ephemeral peer-to-peer messenger">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://stun.cloudflare.com:3478 https://stun.l.google.com:19302; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://stun.cloudflare.com:3478 https://stun.l.google.com:19302; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <link rel="stylesheet" href="styles.css">
 <title>AWEP2PAWE — Private Static P2P</title>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-mark">AWE</div>
+      <div>
+        <b>AWEP2PAWE</b>
+        <small>Ephemeral P2P Messenger</small>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="generate-top" class="primary compact">Generate QR</button>
+      <button id="scan-top" class="ghost compact">Scan QR</button>
+      <button id="choose-top" class="ghost compact">Choose QR</button>
+    </div>
+  </header>
+
+  <main id="home">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><i></i> 100% STATIC & EPHEMERAL P2P</div>
+        <h1>Private <span>Direct</span> Messenger</h1>
+        <p>No backend server, no database, no accounts. Direct peer-to-peer connection established entirely via QR code exchange and WebRTC.</p>
+        <div class="hero-actions">
+          <button id="start" class="primary big">Generate Connection QR <span>→</span></button>
+          <button id="scan" class="ghost big">Scan QR Camera</button>
+          <button id="choose" class="ghost big">Choose QR Image</button>
+          <input type="file" id="qr-image" accept="image/*" class="hidden">
+        </div>
+
+        <div class="flow-card">
+          <div class="flow-head">
+            <b>Two-QR Handshake Flow</b>
+            <span class="local-badge">Out-of-Band</span>
+          </div>
+          <div class="flow">
+            <div class="flow-step">
+              <strong>1</strong>
+              <b>Person Y</b>
+              <small>Generates Offer QR</small>
+            </div>
+            <div class="flow-line"></div>
+            <div class="flow-step">
+              <strong>2</strong>
+              <b>Person X</b>
+              <small>Scans Offer & generates Answer QR</small>
+            </div>
+            <div class="flow-line"></div>
+            <div class="flow-step">
+              <strong>3</strong>
+              <b>Person Y</b>
+              <small>Scans Answer QR to open P2P connection</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="privacy-grid">
+          <div class="privacy-card">
+            <span>🔒</span>
+            <div>
+              <b>Direct E2EE</b>
+              <small>ECDH + AES-GCM P2P connection</small>
+            </div>
+          </div>
+          <div class="privacy-card">
+            <span>⚡</span>
+            <div>
+              <b>Zero Storage</b>
+              <small>In-memory ephemeral sessions</small>
+            </div>
+          </div>
+          <div class="privacy-card">
+            <span>📁</span>
+            <div>
+              <b>File & Calls</b>
+              <small>Files, Voice & Video P2P</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qr-card">
+        <div class="qr-topline">
+          <span class="status-dot"></span>
+          <span id="qr-status">Ready to connect</span>
+        </div>
+        <div class="qr-frame">
+          <div id="qr">
+            <div class="qr-empty">
+              <span>📱</span>
+              <b>No QR Generated</b>
+              <small>Click "Generate Connection QR" to start handshake</small>
+            </div>
+          </div>
+        </div>
+        <div class="id-line">
+          <span>Short Session ID:</span>
+          <strong id="short-id">—</strong>
+        </div>
+        <div id="security-panel" class="security-panel hidden">
+          <div>Security Verification Code:</div>
+          <strong id="security-code">—</strong>
+        </div>
+        <div class="qr-actions">
+          <button id="download-qr" class="ghost compact" disabled>Save QR Code Image</button>
+        </div>
+        <div class="qr-hint">Scan with camera or select QR image file</div>
+      </div>
+    </section>
+  </main>
+
+  <section id="chat" class="chat hidden">
+    <div class="chat-head">
+      <button id="back" class="ghost compact">← Back</button>
+      <div class="peer-avatar">P2P</div>
+      <div class="peer-title">
+        <b>Peer Chat Session</b>
+        <small id="peer-state">Connecting...</small>
+      </div>
+      <div class="connection-pill">
+        <span></span>
+        <span>P2P ENCRYPTED</span>
+      </div>
+      <div class="actions">
+        <button id="voice" class="ghost compact">📞 Voice</button>
+        <button id="video" class="ghost compact">📹 Video</button>
+      </div>
+    </div>
+
+    <div class="chat-security">
+      <div>Session ID: <b id="chat-id">—</b> <button id="copy-id" class="ghost compact">Copy</button></div>
+      <div>Security Code: <b id="security-code-inline">—</b></div>
+      <div class="hidden">Full Session ID: <span id="session-id">—</span></div>
+    </div>
+
+    <div id="transfer" class="transfer hidden">
+      <span id="transfer-name">File transfer...</span>
+      <progress id="transfer-progress" value="0" max="100"></progress>
+    </div>
+
+    <div id="messages" class="messages">
+      <div class="chat-empty">
+        <span>💬</span>
+        <b>Encrypted P2P Session Active</b>
+        <small>Send text messages, exchange files, or start audio/video calls directly between peers.</small>
+      </div>
+    </div>
+
+    <form id="composer" class="composer">
+      <label for="file-input" class="attach" title="Attach file">+</label>
+      <input type="file" id="file-input" class="hidden" multiple>
+      <input type="text" id="message" placeholder="Type a message..." autocomplete="off">
+      <button type="submit" class="primary">Send</button>
+    </form>
+  </section>
+</div>
+
+<!-- Scanner Modal -->
+<dialog id="scanner" class="modal scanner-modal">
+  <button id="close-scan" class="close">&times;</button>
+  <div class="modal-eyebrow">QR SCANNER</div>
+  <h2>Scan Peer QR Code</h2>
+  <p id="scanner-status">Starting camera...</p>
+  <div class="scanner-frame">
+    <video id="scan-video" playsinline></video>
+    <div class="scanner-corners"></div>
+  </div>
+  <div class="scanner-controls">
+    <button id="scan-camera" class="primary">Restart Camera</button>
+  </div>
+</dialog>
+
+<!-- Call Modal -->
+<dialog id="call" class="modal call-modal">
+  <button id="close-call" class="close">&times;</button>
+  <div class="modal-eyebrow">P2P CALL</div>
+  <h2 id="call-title">Call Active</h2>
+  <p id="call-state">Connecting...</p>
+  <div>
+    <video id="remote" autoplay playsinline></video>
+    <audio id="remote-audio" autoplay></audio>
+    <video id="local" autoplay playsinline muted></video>
+  </div>
+  <div class="modal-actions call-actions">
+    <button id="mute" class="ghost">🎙 Mute</button>
+    <button id="camera" class="ghost">📹 Camera</button>
+    <button id="hangup" class="danger">Hang Up</button>
+  </div>
+</dialog>
+
+<!-- Incoming Call Modal -->
+<dialog id="incoming" class="modal">
+  <div class="modal-eyebrow">INCOMING CALL</div>
+  <h2 id="incoming-title">Incoming Call</h2>
+  <p>Your peer is calling you over direct WebRTC connection.</p>
+  <div class="modal-actions">
+    <button id="reject-call" class="danger">Reject</button>
+    <button id="accept-call" class="primary">Answer</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast"></div>
+
+<script src="vendor/qrcode.js"></script>
+<script src="vendor/qr-scanner.legacy.min.js"></script>
+<script src="privacy-file.js"></script>
+<script src="qr-file.js"></script>
+<script src="bootstrap.js"></script>
+</body>
+</html>
