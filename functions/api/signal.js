@@ -1,22 +1,38 @@
-const sessions = new Map();
-const TTL = 10 * 60 * 1000;
-const MAX = 24_000;
-const headers = {"content-type":"application/json; charset=utf-8","cache-control":"no-store, no-cache, must-revalidate","access-control-allow-origin":"*","access-control-allow-methods":"POST, OPTIONS","access-control-allow-headers":"content-type"};
-const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
-const validToken=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{20,80}$/.test(v);
-const validClient=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{12,80}$/.test(v);
-const validSdp=v=>typeof v==='string'&&v.length>20&&v.length<=16000;
-const cacheKey=token=>new Request(`https://awep2p-signal.invalid/session/${token}`);
-async function loadSession(token){const local=sessions.get(token);if(local)return local;try{const cached=await caches.default.match(cacheKey(token));if(!cached)return null;const session=await cached.json();if(!session||Date.now()>session.exp)return null;sessions.set(token,session);return session}catch{return null}}
-async function saveSession(token,session,ctx){sessions.set(token,session);try{const response=new Response(JSON.stringify(session),{headers:{"content-type":"application/json","cache-control":`public, max-age=${Math.max(1,Math.ceil((session.exp-Date.now())/1000))}`}});ctx.waitUntil(caches.default.put(cacheKey(token),response))}catch{}}
-async function deleteSession(token){sessions.delete(token);try{await caches.default.delete(cacheKey(token))}catch{}}
-export async function onRequest(context){const {request,waitUntil}=context,ctx={waitUntil};if(request.method==='OPTIONS')return new Response(null,{status:204,headers});if(request.method!=='POST')return json({ok:false,error:'method not allowed'},405);if((Number(request.headers.get('content-length'))||0)>MAX)return json({ok:false,error:'request too large'},413);let body;try{body=await request.json()}catch{return json({ok:false,error:'invalid json'},400)}const token=body.token;if(!validToken(token))return json({ok:false,error:'invalid session'},400);const now=Date.now();let session=await loadSession(token);
-if(body.action==='offer'){if(!validClient(body.client)||!validSdp(body.offer))return json({ok:false,error:'invalid offer'},400);if(session)return json({ok:false,error:'session collision — generate a new QR'},409);const exp=Math.min(Number(body.exp)||now+TTL,now+TTL);session={offer:body.offer,owner:body.client,exp,touched:now,request:null,used:false,issuedAt:now};await saveSession(token,session,ctx);return json({ok:true,expires:exp,issuedAt:now})}
-if(!session||now>session.exp){await deleteSession(token);return json({ok:false,error:'session expired'},410)}
-if(!validClient(body.client))return json({ok:false,error:'invalid client'},400);session.touched=now;
-switch(body.action){
-case 'request':{if(body.client===session.owner)return json({ok:false,error:'owner cannot request itself'},400);if(session.used)return json({ok:false,error:'QR already used'},409);if(!validSdp(body.answer))return json({ok:false,error:'invalid answer'},400);if(session.request&&session.request.client!==body.client&&session.request.status==='pending')return json({ok:false,error:'another request is pending'},409);if(session.request?.client===body.client&&session.request.status==='pending')return json({ok:true,status:'pending',duplicate:true});session.request={client:body.client,answer:body.answer,status:'pending',touched:now};await saveSession(token,session,ctx);return json({ok:true,status:'pending'})}
-case 'poll':{const r=session.request;if(!r)return json({ok:true,request:null,answer:null,approved:false});if(now-r.touched>TTL){session.request=null;await saveSession(token,session,ctx);return json({ok:true,request:null,answer:null,approved:false})}if(body.client===session.owner){return json({ok:true,request:{client:r.client,status:r.status},approved:r.status==='approved',answer:r.status==='approved'?r.answer:null})}if(r.client!==body.client)return json({ok:true,request:null,answer:null,approved:false});return json({ok:true,request:{status:r.status},approved:r.status==='approved',answer:r.status==='approved'?r.answer:null})}
-case 'approve':{if(body.client!==session.owner||!session.request)return json({ok:false,error:'no pending request'},409);if(session.request.status!=='pending')return json({ok:false,error:'request already closed'},409);session.request.status='approved';session.request.touched=now;session.used=true;await saveSession(token,session,ctx);return json({ok:true,status:'approved',oneTime:true})}
-case 'reject':{if(body.client!==session.owner||!session.request)return json({ok:false,error:'no pending request'},409);if(session.request.status!=='pending')return json({ok:false,error:'request already closed'},409);session.request.status='rejected';session.request.touched=now;session.used=true;await saveSession(token,session,ctx);return json({ok:true,status:'rejected',oneTime:true})}
-default:return json({ok:false,error:'unsupported action'},400)}}
+// Ephemeral WebRTC signaling only. No accounts, names, messages or files are persisted.
+const sessions=new Map(),TTL=10*60*1000,MAX=24000;
+const H={'content-type':'application/json; charset=utf-8','cache-control':'no-store, no-cache, must-revalidate','access-control-allow-origin':'*','access-control-allow-methods':'POST, OPTIONS','access-control-allow-headers':'content-type'};
+const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:H});
+const okToken=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{20,100}$/.test(v),okId=v=>typeof v==='string'&&/^[A-Za-z0-9]{8,10}$/.test(v),okClient=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{12,80}$/.test(v),okSdp=v=>typeof v==='string'&&v.length>20&&v.length<=18000;
+const key=t=>new Request('https://awep2p-signal.invalid/v4/'+t),idKey=i=>new Request('https://awep2p-signal.invalid/v4/id/'+i);
+async function load(token){let s=sessions.get(token);if(s)return s;try{const r=await caches.default.match(key(token));s=r?await r.json():null;if(s&&Date.now()<s.exp){sessions.set(token,s);return s}}catch{}return null}
+async function save(token,s,ctx){sessions.set(token,s);try{ctx.waitUntil(caches.default.put(key(token),new Response(JSON.stringify(s),{headers:{'content-type':'application/json','cache-control':'no-store'}})));ctx.waitUntil(caches.default.put(idKey(s.id),new Response(JSON.stringify({token}),{headers:{'content-type':'application/json','cache-control':'no-store'}})))}catch{}}
+async function remove(token,id){sessions.delete(token);try{await caches.default.delete(key(token));if(id)await caches.default.delete(idKey(id))}catch{}}
+async function findById(id){try{const r=await caches.default.match(idKey(id));if(!r)return null;const x=await r.json();return x?.token||null}catch{return null}}
+export async function onRequest({request,waitUntil}){
+ if(request.method==='OPTIONS')return new Response(null,{status:204,headers:H});
+ if(request.method!=='POST')return json({ok:false,error:'method not allowed'},405);
+ if((Number(request.headers.get('content-length'))||0)>MAX)return json({ok:false,error:'request too large'},413);
+ let b;try{b=await request.json()}catch{return json({ok:false,error:'invalid json'},400)}
+ const now=Date.now(),a=b.action;
+ if(a==='offer'){
+   if(!okToken(b.token)||!okId(b.id)||!okClient(b.client)||!okSdp(b.offer))return json({ok:false,error:'invalid offer'},400);
+   if(await load(b.token))return json({ok:false,error:'session collision'},409);
+   const exp=Math.min(Number(b.exp)||now+TTL,now+TTL),s={id:b.id,offer:b.offer,owner:b.client,exp,created:now,last:now,answer:null,answerClient:null,used:false};
+   await save(b.token,s,{waitUntil});return json({ok:true,id:s.id,expires:exp});
+ }
+ let token=b.token;if(!okToken(token)&&okId(b.id))token=await findById(b.id);
+ if(!okToken(token))return json({ok:false,error:'invalid connection id'},400);
+ const s=await load(token);if(!s||now>s.exp){await remove(token,s?.id);return json({ok:false,error:'expired'},410)}
+ if(!okClient(b.client))return json({ok:false,error:'invalid client'},400);
+ if(b.client===s.owner)return json({ok:false,error:'same peer'},400);
+ s.last=now;
+ switch(a){
+   case 'request':
+     if(s.used)return json({ok:false,error:'connection already used'},409);
+     if(!okSdp(b.answer))return json({ok:false,error:'invalid answer'},400);
+     s.answer=b.answer;s.answerClient=b.client;s.used=true;await save(token,s,{waitUntil});return json({ok:true,connected:true});
+   case 'poll':return json({ok:true,connected:!!s.answer,answer:s.answer||null,oneTime:s.used});
+   case 'resolve-id':return json({ok:true,id:s.id,offer:s.offer,exp:s.exp});
+   default:return json({ok:false,error:'unsupported action'},400)
+ }
+}
