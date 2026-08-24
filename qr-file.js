@@ -1,0 +1,7 @@
+(()=>{'use strict';
+let busy=false;
+async function loadDecoder(){if(window.QrScanner)return window.QrScanner;const m=await import('https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js');return m.default||m.QrScanner||m}
+async function decodeFile(file){if(!file||!file.type.startsWith('image/'))throw Error('Choose an image file containing a QR code');const QrScanner=await loadDecoder();if(!QrScanner||typeof QrScanner.scanImage!=='function')throw Error('QR image decoder unavailable');const result=await QrScanner.scanImage(file,{returnDetailedScanResult:true});const raw=typeof result==='string'?result:result?.data;if(!raw)throw Error('No QR code found in this image');if(typeof window.__aweDecodeQR!=='function')throw Error('Chat QR handler unavailable');await window.__aweDecodeQR(raw)}
+function install(){const input=document.querySelector('#qr-image');if(!input)return;input.addEventListener('change',async e=>{if(busy)return;const file=e.target.files?.[0];e.target.value='';if(!file)return;busy=true;try{await decodeFile(file)}catch(err){const t=document.querySelector('#toast');if(t){t.textContent=err?.message||'Could not read QR image';t.classList.add('show');clearTimeout(window.__qrFileToast);window.__qrFileToast=setTimeout(()=>t.classList.remove('show'),3000)}}finally{busy=false}},true)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
