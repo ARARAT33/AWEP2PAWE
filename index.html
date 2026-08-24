@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="AWEP2PAWE — private static ephemeral peer-to-peer messenger">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://stun.cloudflare.com:3478 https://stun.l.google.com:19302; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://stun.cloudflare.com:3478 https://stun.l.google.com:19302; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <link rel="stylesheet" href="styles.css">
 <title>AWEP2PAWE — Private Static P2P</title>
 </head>
@@ -33,7 +33,7 @@
 <dialog id="incoming"><div class="modal"><div class="modal-eyebrow">INCOMING CALL</div><h2 id="incoming-title">Incoming call</h2><p>Answer this call?</p><div class="modal-actions"><button id="reject-call" class="danger">Decline</button><button id="accept-call" class="primary">Answer</button></div></div></dialog>
 <dialog id="call"><div class="modal call-modal"><button id="close-call" class="close">×</button><div class="modal-eyebrow">DIRECT WEBRTC CALL</div><h2 id="call-title">Call</h2><p id="call-state">Connecting…</p><video id="remote" autoplay playsinline></video><video id="local" autoplay muted playsinline></video><audio id="remote-audio" autoplay></audio><div class="call-actions"><button id="mute" class="ghost">🎙 Mute</button><button id="camera" class="ghost">📹 Camera</button><button id="hangup" class="danger">End</button></div></div></dialog>
 <div id="toast" class="toast"></div>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" integrity="sha512-2BJF/j/2TII7JcHAPMIT74wLQ8BTk5NqeGAC5ypeSKLa6V96abAl86gvcsrU2etaN4fttehQtcxXXAriYXlDCg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" integrity="sha512-2BJF/j/2TII7JHcAPMIT74wLQ8BTk5NqeGAC5ypeSKLa6V96abAl86gvcsrU2etaN4fttehQtcxXXAriYXlDCg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js" integrity="sha512-Fb3L5w+k6OMng6v8gWYr7fuO//kwaC0PfMReI2pYIRYHRfkjvrsNHoGkiVCvjNkrXX3+Ve9Ag+COx98AZlvR7w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script defer src="bootstrap.js"></script>
 </body>
