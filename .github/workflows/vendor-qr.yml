@@ -1,0 +1,39 @@
+name: Vendor QR dependencies
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned QR sources into the repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p vendor
+          curl --fail --location --retry 3 --output vendor/qrcode.js \
+            https://raw.githubusercontent.com/kazuhikoarase/qrcode-generator/master/js/dist/qrcode.js
+          curl --fail --location --retry 3 --output vendor/qr-scanner.legacy.min.js \
+            https://raw.githubusercontent.com/nimiq/qr-scanner/master/qr-scanner.legacy.min.js
+          printf '%s\n' 'QR dependencies are vendored locally. Runtime must not load CDN assets.' > vendor/README.md
+      - name: Commit local vendor files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add vendor/qrcode.js vendor/qr-scanner.legacy.min.js vendor/README.md
+          if git diff --cached --quiet; then
+            echo 'Vendor files already up to date.'
+            exit 0
+          fi
+          git commit -m 'Vendor QR dependencies locally'
+          git push
